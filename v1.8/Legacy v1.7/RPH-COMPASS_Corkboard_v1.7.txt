@@ -1,0 +1,24 @@
+RPH TRACKER DEVELOPMENT CORKBOARD
+Version: v1.7
+==============================
+LEGEND
+======
+[v] - feature is considered complete, archived, or merged to Roadmap
+    - any features marked with [v] are to be deleted after confirmed completion, archive, or merger to Roadmap
+[x] - feature greenlit to implement, no work has been started, only accepted as "to do"
+    - any features marked with [x] are to be deleted after confirmed merge with roadmap
+[r] - feature is removed from the docket until further notice
+[p] - feature is planned for future upgrade, pending exploration of feasibility and decision on necessity
+
+ACTIVE CONCEPTS
+===============
+
+[p] FUTURE DEBUG EXPANSION
+    Evaluate alternate debug overlays or selective parameter outputs
+
+[p] Evaluate the feasibility of graphical representation for v2.0
+
+ARCHIVED CONCEPTS (MIGRATED OR COMPLETED)
+    - this list is to be cleared in next iteration of this document
+=========================================
+CLEAR

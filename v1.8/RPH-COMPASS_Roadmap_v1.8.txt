@@ -1,0 +1,140 @@
+RPH TRACKER ROADMAP
+Version: v1.7 (ASCII Style)
+====================================
+PROJECT IDENTITY
+================
+RPH-COMPASS
+Rotor, Piston, Hinge — Component Orientation, Motion And Positional Assessment Status System
+"Monitoring position. Assessing motion. Maintaining awareness. Precision is our direction."
+
+
+STRICT CODE ADHERENCE PRINCIPLES
+================================
+1. Maintain compatibility with standard Space Engineers INI-style Custom Data.
+2. Preserve PARK script data integrity (never write or modify [PARK:*] sections).
+3. Use ASCII-only characters for all script output, custom data, and documentation.
+4. Avoid redundant writes to Custom Data unless explicitly commanded (e.g., rebuild_cd).
+5. Ensure user-facing configuration keys remain consistent across all modules.
+6. Modularize features for scalability and future expansion.
+
+LEGEND
+======
+[x] - greenlit feature to implement, no work has been started, only accepted as "to do"
+[-] - feature is a work in progress, a stub, or partially working
+[+] - feature is a work in progress, acceptable in its current iteration, possibly requires tweaking
+[v] - feature is considered complete, works as designed
+[r] - feature is removed from the docket until further notice
+[p] - feature is planned for future upgrade, not explored or proven feasible
+
+PHASE 1 - INITIALIZATION AND CORE
+=================================
+[v] Basic block group scanning and list population
+[v] Rotor/Piston/Hinge identification and classification
+[v] Per-part custom data headers created (RPH section)
+[v] Persistent storage of calibration and configuration keys
+[v] Refresh and rebuild_cd command separation finalized
+[v] Calibration safety implemented (PARK-safe)
+[v] Command architecture established (refresh, rebuild_cd, cleanup, calibrate_all)
+
+PHASE 2 - DATA HANDLING AND SORTING
+===================================
+[v] Internal data model implemented for parts and LCD targets
+[v] Group membership detection and caching system
+[v] Sorting system (default, by group, by name, by type)
+[v] Alphabetical subgroup sorting verified functional
+[v] Group caching quirk documented and handled
+
+PHASE 3 - DISPLAY SYSTEM
+========================
+[v] Per-LCD configuration via [RPH:Display]
+[v] Added key: rph_display_mode = full | compact | debug
+[v] Compact Mode - condensed line display grouped per subgroup
+[v] Debug Mode - engineering readout for tagged LCDs only
+[v] Group-based filtering (rph_display_groups)
+[v] Display header key (rph_header)
+[v] ASCII-only enforcement confirmed
+[v] LCD display auto-refresh stability verified
+[v] Added key: rph_display_autosize = true | false (v1.7.3, acceptable in its current version, possible revision later)
+[v] Added key: rph_group_separators = true | false (v1.7.3, active when sorted by group)
+[v] Echo output from refresh/rebuild_cd to be consolidated to single-block echo to prevent PB terminal clipping (due to quirks of the game engine a workaround had to be found, SafeEcho() 
+       wrapper instead of a "packet" to echo)
+
+PHASE 4 - EXTENDED FEATURE LAYER
+================================
+[x] Cross-LCD coordination (linked summaries)
+[x] Multi-PB handshake groundwork
+[x] Enhanced calibration controls (per-part command, CHANGE to per-group command)
+[x] Persistent state sync
+[x] Velocity display (greenlit)
+[x] Configurable update interval (greenlit)
+[p] Autoscroll (pending further study of fesibility and possible conflicts with autosize)
+[x] Units and precision 
+[x] Per-font resizing with separate ladders, force font to debug or monospace
+[x] Implement a safeguard against rewriting custom data (in addition to checking whether part is calibrated or not)
+[x] Implement an UNSAFE CLEAR. A command to clear RPH keys from ALL tracked parts, regardless of safety keys (calibrated, read-only)
+
+PHASE 5 - ADMINISTRATIVE AND DOCUMENTATION
+==========================================
+[v] Codebase cleanup and ASCII sanitation complete
+[v] Documentation alignment (roadmap, corkboard, technotes)
+[v] Version tracking established
+[v] Test plan formalized
+[v] Stable baseline declared (v1.6e)
+
+STATUS SUMMARY
+==============
+1.0  Core Framework ...................... [v]
+2.0  Data Handling & Sorting ............. [v]
+3.0  Display System ...................... [v]
+4.0  Extended Features ................... [x]
+5.0  Documentation ....................... [v]
+
+============================================================
+RPH-COMPASS Roadmap - v1.8 Addendum (non-destructive)
+This section is to be cleared as features are implemented
+This section only serves as a PRIORITY order, the features
+       are already outlined above, and will be marked accordingly
+============================================================
+Status: ACTIVE
+Notes: This addendum defines the v1.8 work order without removing
+       or altering completed items from v1.7 and earlier.
+
+1. Echo / Logging
+   [v] Consolidate PB Echo into a single buffered output per run
+       - Reason: PB console clipping in v1.7.3
+       - Impact: Display/logging only, no change to data model
+
+2. Display Enhancements
+   [x] Compute and show velocity for tracked parts
+       - Rotors / Hinges: deg/s
+       - Pistons: m/s
+       - First exposed in DEBUG view, optional in FULL
+   [ ] Optional font forcing in [RPH:Display]
+       key: rph_font = auto | debug | monospace
+       - Must be ASCII-only
+       - Must not break existing v1.7.3 configs
+   [ ] Split autosize ladder per font type
+       - debug ladder
+       - monospace ladder
+       - global minimum clamp to prevent over-shrink
+
+3. Calibration Commands
+   [ ] Per-group calibration command
+       syntax (proposed): "calibrate group <name>"
+       - Must use existing PARK-safe write discipline
+       - Per-part variant to be evaluated after group version
+
+4. Ongoing Specifications
+   [v] Preserve PARK-safe non-destructive writes
+   [v] ASCII-only keys and values in Custom Data
+   [ ] Document new display keys in TechNotes and Context Kit
+
+Implementation Order (v1.8)
+   1) Echo consolidation
+   2) Velocity computation and display
+   3) Optional font forcing
+   4) Split autosize ladder
+   5) Per-group calibration
+End of v1.8 Addendum
+============================================================
+

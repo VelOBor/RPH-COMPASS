@@ -1,0 +1,40 @@
+RPH TRACKER VERSION HISTORY
+Version: v1.7
+==============================
+
+v1.5 - Initialization
+---------------------
+First functional iteration, group scanning and basic calibration.
+
+v1.53 - Structural Stabilization
+--------------------------------
+Refactored refresh vs rebuild logic.
+Improved PARK safety and group caching.
+
+v1.6 - Display Integration
+--------------------------
+Added per-LCD configuration, sorting and display modes.
+Introduced debug and compact layouts.
+
+v1.6e - Stable Release
+----------------------
+- Compact and Debug display modes integrated via rph_display_mode (per-LCD)
+- Global calibration implemented (calibrate_all)
+- Refresh/rebuild_cd separation finalized, PARK-safe confirmed
+- Alphabetical subgroup sorting verified functional
+- Pending features: per-part calibration, velocity readout, configurable update interval
+
+v1.7 - Documentation Alignment
+------------------------------
+- Updated roadmap to reflect current command set and LCD modes
+- Added strict code adherence principles
+- Moved Units & Precision Toggle to Corkboard
+- Declared v1.7 as baseline stable for further expansion (moving to v1.8 pending confirmation)
+- Bumped Units and Precision to Roadmap
+- Implemented per-LCD autosize font (according to longest line heuristic, tuned for the default in-game "debug" font)
+- Implemented per-LCD separators for group sorting mode
+- Clarified behavior of compact renderer (one group per line)
+- Improved refresh echo
+- Sample headers in PB CD updated
+- Documented PB Echo clipping behavior for multi-line refresh
+- Various minor visual improvements

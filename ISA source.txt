@@ -1,0 +1,569 @@
+
+// Isy's Solar Alignment Script
+// ============================
+// Version: 4.4.0
+// Date: 2023-08-06
+
+// =======================================================================================
+//                                                                            --- Configuration ---
+// =======================================================================================
+
+// --- Essential Configuration ---
+// =======================================================================================
+
+// Name of the group with all the solar related rotors (not needed in gyro mode)
+string rotorGroupName = "[GF] Solar Rotors (power tower 1)";
+
+// By enabling gyro mode, the script will no longer use rotors but all gyroscopes on the grid instead.
+// This mode only makes sense when used on a SHIP in SPACE. Gyro mode deactivates the following
+// features: night mode, rotate to sunrise, time calculation and triggering external timer blocks.
+bool useGyroMode = false;
+
+// Name of the reference group for gyro mode. Put your main cockpit, flight seat or remote control in this group!
+string referenceGroupName = "Solar Reference";
+
+
+// --- Rotate to sunrise ---
+// =======================================================================================
+
+// Rotate the panels towards the sunrise during the night? (Possible values: true | false, default: true)
+// The angle is figured out automatically based on the first lock of the day.
+// If you want to set the angles yourself, set manualAngle to true and adjust the angles to your likings.
+bool rotateToSunrise = true;
+bool manualAngle = false;
+int manualAngleYaw = 0;
+int manualAngleTilt = 0;
+
+
+// --- Power fallback ---
+// =======================================================================================
+
+// With this option, you can enable your reactors and hydrogen engines as a safety fallback, if not enough power is available
+// to power all your machines or if the battery charge gets low. By default, all reactors and hydrogen engines
+// on the same grid will be used. If you only want to use specific ones, put their names or group in the list.
+// Example: string[] fallbackDevices = { "Small Reactor 1", "Base reactor group", "Hydrogen Engine" };
+bool useReactorFallback = false;
+bool useHydrogenEngineFallback = false;
+string[] fallbackDevices = { };
+
+// Activation order
+// By default, the hydrogen engine will be turned on first and the reactors after that if still not enough power is available.
+// Set this value to false, and the reactors will be used first.
+bool activateHydrogenEngineFirst = true;
+
+// Activation on low battery?
+// The fallback devices will be active until 'turnOffAtPercent' of the max battery charge after it was turned on at 'turnOnAtPercent'.
+bool activateOnLowBattery = true;
+double turnOnAtPercent = 10;
+double turnOffAtPercent = 15;
+
+// Activate on overload?
+// If the combined output of batteries, solar panels and wind turbines is more than 'overloadPercentage' of their max output, the fallback devices will be turned on.
+bool activateOnOverload = true;
+double overloadPercentage = 90;
+
+
+// --- Base Light Management ---
+// =======================================================================================
+
+// Enable base light management? (Possible values: true | false, default: false)
+// Lights will be turned on/off based on daytime.
+bool baseLightManagement = false;
+
+// Simple mode: toggle lights based on max. solar output (percentage). Time based toggle will be deactivated.
+bool simpleMode = false;
+int simpleThreshold = 50;
+
+// Define the times when your lights should be turned on or off. If simple mode is active, this does nothing.
+int lightOffHour = 8;
+int lightOnHour = 18;
+
+// To only toggle specific lights, declare groups for them.
+// Example: string[] baseLightGroups = { "Interior Lights", "Spotlights", "Hangar Lights" };
+string[] baseLightGroups = { };
+
+
+// --- LCD panels ---
+// =======================================================================================
+
+// To display the main script informations, add the following keyword to any LCD name (default: !ISA-main).
+// You can enable or disable specific informations on the LCD by editing its custom data.
+string mainLcdKeyword = "ISA-main";
+
+// To display compact stats (made for small screens, add the following keyword to any LCD name (default: !ISA-compact).
+string compactLcdKeyword = "ISA-compact";
+
+// To display all current warnings and problems, add the following keyword to any LCD name (default: !ISA-warnings).
+string warningsLcdKeyword = "ISA-warnings";
+
+// To display the script performance, add the following keyword to any LCD name (default: !ISA-performance).
+string performanceLcdKeyword = "ISA-performance";
+
+// Default screen font, fontsize and padding, when a screen is first initialized. Fonts: "Debug" or "Monospace"
+string defaultFont = "Debug";
+float defaultFontSize = 0.6f;
+float defaultPadding = 2f;
+
+
+// --- Terminal statistics ---
+// =======================================================================================
+
+// The script can display informations in the names of the used blocks. The shown information is a percentage of
+// the current efficiency (solar panels and oxygen farms) or the fill level (batteries and tanks).
+// You can enable or disable single statistics or disable all using the master switch below.
+bool enableTerminalStatistics = true;
+
+bool showSolarStats = true;
+bool showWindTurbineStats = true;
+bool showBatteryStats = true;
+bool showOxygenFarmStats = true;
+bool showOxygenTankStats = true;
+
+
+// --- External timer blocks ---
+// =======================================================================================
+
+// Trigger external timer blocks at specific events? (action "Start" is used with a delay > 1; with a delay of 1 "Trigger Now")
+// Events can be:
+// - any commandline argument, like "pause", "resume", "realign"...
+// - "battery##" (a battery charge percentage - ## stands for a battery charge percentage, like "battery30" for 30 percent charge)
+// - "badweather" and "goodweather" which will trigger at the beginning and end of bad weather
+// - "sunrise" and "sunset" which will trigger at the beginning and end of the day
+// - a time like "15:00"
+// - a number for every X seconds
+// Every event needs a timer block name in the exact same order as the events.
+// Calling the same timer block with multiple events requires it's name multiple times in the timers list!
+// Example:
+// string[] events = { "sunrise", "sunset", "15:00", "battery30" };
+// string[] timers = { "Timer 1", "Timer 1", "Timer 2", "Timer 3" };
+// This will trigger "Timer 1" at sunrise and sunset, "Timer 2" at 15:00 and "Timer 3" at 30% battery charge.
+string[] events = { };
+string[] timers = { };
+
+
+// --- Settings for enthusiasts ---
+// =======================================================================================
+
+// Use weather detection? This needs solar panels and wind turbines to work and will pause the script in certain weather
+// conditions, like fog or storms. The variable 'maxBadWeatherMinutes' declares the max duration, the alignment is slowed down
+// in bad weather conditions.
+bool useWeatherDetection = true;
+double maxBadWeatherMinutes = 5;
+
+// Check the integrity and general condition of all used blocks?
+bool checkIntegrity = true;
+bool addDamageTextToName = true;
+bool showDamagedBlockOnHud = true;
+
+// Output difference in percent between the last locked output and a new alignment: lower values = more frequent alignment (defaults: rotor: 1, gyro: 2)
+double realignPercentageRotor = 1;
+double realignPercentageGyro = 2;
+
+// Percentage of the max detected output where the script starts night mode (default: 10)
+double nightPercentage = 10;
+
+// Percentage of the max detected output where the script detects night for time calculation (default: 50)
+double nightTimePercentage = 50;
+
+// Rotor speeds (speeds are automatically scaled between these values based on the output)
+float rotorMinSpeed = 0.05f;
+float rotorMaxSpeed = 1.0f;
+
+// Rotor options
+float rotorTorqueLarge = 33600000f;
+float rotorTorqueSmall = 448000f;
+bool setInertiaTensor = true;
+bool setRotorLockWhenStopped = false;
+
+// Min gyro RPM, max gyro RPM and gyro power for gyro mode
+const double minGyroRPM = 0.1;
+const double maxGyroRPM = 1;
+const float gyroPower = 1f;
+
+// Automatically pause aligning while using gyro mode and sitting in the cockpit?
+bool autoPauseGyroMode = true;
+
+// Gyro alignment pause duration if no sun is in sight (in seconds)
+int noSunPause = 60;
+
+
+// =======================================================================================
+//                                                                      --- End of Configuration ---
+//                                                        Don't change anything beyond this point!
+// =======================================================================================
+
+
+float ȋ=0;float Ȍ=0;float ȍ=0;float Ȏ=0;float ȏ=0;List<IMyMotorStator>Ȑ=new List<IMyMotorStator>();List<Ÿ>ȑ=new List<Ÿ>(
+);List<IMyGyro>Ȓ=new List<IMyGyro>();List<IMyThrust>ȓ=new List<IMyThrust>();List<IMyTerminalBlock>Ȕ=new List<
+IMyTerminalBlock>();List<IMyTerminalBlock>ȕ=new List<IMyTerminalBlock>();List<IMyTerminalBlock>Ȗ=new List<IMyTerminalBlock>();List<
+IMyTerminalBlock>Ș=new List<IMyTerminalBlock>();List<IMyInteriorLight>Ȋ=new List<IMyInteriorLight>();List<IMyReflectorLight>ǳ=new List<
+IMyReflectorLight>();List<IMyPowerProducer>ǽ=new List<IMyPowerProducer>();HashSet<IMyTerminalBlock>Ǵ=new HashSet<IMyTerminalBlock>();int
+ǵ=0;int Ƕ=0;int Ƿ=0;int Ǹ=0;List<IMySolarPanel>ǹ=new List<IMySolarPanel>();int Ǻ=0;bool ǻ=false;bool Ǽ=false;int Ǿ=30;int
+Ȉ=90;int ǿ=10;int Ȁ=0;int ȁ=0;bool Ȃ=true;List<IMyShipController>ȃ=new List<IMyShipController>();double Ȅ=0;double ȅ=0;
+double Ȇ=0;double ȇ=1;double ȉ=1;double ȗ=1;bool ǲ=false;bool ǰ=false;bool ư=false;double Ʊ=0;double Ʋ=0;double Ƴ=0;bool ƴ=
+true;bool Ƶ=true;bool ƶ=true;double Ʒ=0;double Ƹ=0;double ƺ=0;bool Ǆ=false;DateTime ƻ=new DateTime();List<IMyBatteryBlock>Ƽ=
+new List<IMyBatteryBlock>();float ƽ=0;float ƾ=0;float ƿ=0;float ǀ=0;float ǁ=0;float ǂ=0;List<IMyOxygenFarm>ǃ=new List<
+IMyOxygenFarm>();List<IMyGasTank>ǅ=new List<IMyGasTank>();double ƹ=0;double Ʈ=0;double ơ=0;int Ƙ=0;List<IMyPowerProducer>ƙ=new List<
+IMyPowerProducer>();int ƚ=0;float ƛ=0;float Ɯ=0;float Ɲ=0;bool ƞ=false;bool Ɵ=false;int Ơ=0;float Ƣ=-1;DateTime Ƭ;string ƣ="0 kW";string
+Ƥ="0 kW";string ƥ="0 kW";string Ʀ="0 kW";string Ƨ="0 kW";string ƨ="0 kW";string Ʃ="0 kW";string ƪ="0 kW";string ƫ="0 kW";
+string Ɨ="0 kW";string ƭ="0 kW";string ǆ="0 kW";string Ǜ="0 L";string ǜ="0 L";string ǝ="Checking setup...";string Ǟ;string ǟ;
+string[]Ǡ={"/","-","\\","|"};int ǡ=0;int Ǣ=0;int ǣ=30;const int Ǥ=7200;int ǥ=Ǥ;const int Ǧ=Ǥ/2;int ǧ=Ǧ;DateTime Ǩ=new DateTime
+();double ǩ=60;string[]Ŭ={"showHeading=true","showWarnings=true","showCurrentOperation=true","showSolarStats=true",
+"showTurbineStats=true","showBatteryStats=true","showOxygenStats=true","showLocationTime=true","scrollTextIfNeeded=true"};string[]Ǫ={
+"showSolarStats=false","showTurbineStats=false","showBatteryStats=false","showOxygenStats=false","showLocationTime=false","showRealTime=false"
+,"scrollTextIfNeeded=false"};string[]ǫ={"showHeading=true","scrollTextIfNeeded=true"};bool Ǭ=false;bool ǭ=false;bool Ǯ=
+false;int ǯ=0;int Ǳ=0;double ǚ=0;string Ǉ="";bool ǐ=false;string ǈ="";string ǉ="";string ė;int Ǌ=0;int ǋ=0;HashSet<string>ǌ=
+new HashSet<string>();HashSet<string>Ǎ=new HashSet<string>();string ǎ="";bool Ǐ=false;string Ǒ="both";bool Ǚ=false;double ǒ
+=0;double Ǔ=0;int ǔ=1;bool Ǖ=true;bool ǖ=true;int Ǘ=0;string[]ǘ={"","Get blocks","Get LCDs","Get block stats",
+"Time Calculation","Rotation Logic","Reactor Fallback"};Program(){w();realignPercentageRotor=(realignPercentageRotor%100)/100;
+realignPercentageGyro=(realignPercentageGyro%100)/100;nightPercentage=(nightPercentage%100)/100;nightTimePercentage=(nightTimePercentage%100)
+/100;Runtime.UpdateFrequency=UpdateFrequency.Update10;}void Main(string Ư){if(ǋ>=10){throw new Exception(
+"Too many errors. Please recompile!\n\nScript stoppped!\n");}try{if(Ư!=""){if(!ɝ(Ư.ToLower()))h("Unknown argument!");ǈ=Ư;ǔ=5;}if(Ǖ){ș();Ȫ(false);k();ǔ=1;Ǖ=false;return;}if(ǖ){if(
+Ǘ==0)ý();if(Ǘ==1)î();if(Ǘ==2)ç();if(Ǘ==3)Ę();if(Ǘ>3){Ǘ=0;ǖ=false;}return;}ǖ=true;if(ǔ==1){ș();}if(ǔ==2){Ȕ=Ğ(
+mainLcdKeyword,Ŭ,defaultFont,defaultFontSize,defaultPadding);ȕ=Ğ(compactLcdKeyword,Ǫ,defaultFont,defaultFontSize,defaultPadding);Ȗ=Ğ(
+warningsLcdKeyword,ǫ,defaultFont,defaultFontSize,defaultPadding);Ș=Ğ(performanceLcdKeyword,ǫ,defaultFont,defaultFontSize,defaultPadding);}
+if(ǔ==3){ɰ();if(checkIntegrity)ɼ();if(!useGyroMode&&useWeatherDetection)ɯ();}if(ǔ==4){if(!useGyroMode)ě();if(!useGyroMode
+&&baseLightManagement)Ē();if(ǐ)W();}if(ǔ==5){if(!ɝ(ǎ)){if(useGyroMode){ɳ();}else{Ȱ();}}}if(ǔ==6){if(useReactorFallback||
+useHydrogenEngineFallback)č();}å(ǘ[ǔ]);ę();if(ǔ>=6){ǔ=1;if(Ǌ>0){ǌ=new HashSet<string>(Ǎ);Ǎ.Clear();if(ǋ>0)ǋ--;if(ǌ.Count==0)ė=null;Ǌ=0;}else{Ǌ++;
+}ǟ=Ǟ;Ǟ="";}else{ǔ++;}ǡ=ǡ>=3?0:ǡ+1;}catch(NullReferenceException){ǋ++;h("Execution of script step aborted:\n"+ǘ[ǔ]+
+" (ID: "+ǔ+")\n\nCached block not available..");ǖ=false;ș();}catch(Exception e){ǋ++;h("Critical error in script step:\n"+ǘ[ǔ]+
+" (ID: "+ǔ+")\n\n"+e);ǖ=false;ș();}}void ș(){if(À==null){Â(Me.CubeGrid);}if(!useGyroMode){var ȭ=GridTerminalSystem.
+GetBlockGroupWithName(rotorGroupName);bool ɡ=false;if(ȭ!=null){ȭ.GetBlocksOfType(Ȑ);if(Ȑ.Count==0){h(
+"There are no rotors in the rotor group:\n'"+rotorGroupName+"'");}else if(Ȑ.Count!=ȑ.Count){ɡ=true;ɺ();ȑ.Clear();foreach(var È in Ȑ){ȑ.Add(new Ÿ(È));}ɹ();}}else{h(
+"Rotor group not found:\n'"+rotorGroupName+"'");}if(ɡ){HashSet<IMyCubeGrid>ɢ=new HashSet<IMyCubeGrid>();foreach(var È in ȑ){if(!È.Ź.Enabled)h("'"+È
+.Ź.CustomName+"' is turned off!\nTurn it on to use it for aligning!");if(!È.Ź.IsAttached)h("'"+È.Ź.CustomName+
+"' has no rotor head!\nAdd one to use it for aligning!");ɢ.Add(È.ź);if(È.ź.GridSize==0.5){È.Ź.Torque=rotorTorqueSmall;}else{È.Ź.Torque=rotorTorqueLarge;}}foreach(var È in ȑ){
+if(ɢ.Contains(È.Ż)){È.ū=true;if(È.Ź.CubeGrid==À&&setInertiaTensor){try{È.Ź.SetValueBool("ShareInertiaTensor",false);}catch
+(Exception){}}}else{È.Ţ=true;if(È.Ź.CubeGrid!=À&&setInertiaTensor){try{È.Ź.SetValueBool("ShareInertiaTensor",true);}catch
+(Exception){}}}}List<int>ɣ=new List<int>();List<IMyCubeGrid>ɤ=new List<IMyCubeGrid>();for(int e=0;e<ȑ.Count;e++){if(ɤ.
+Contains(ȑ[e].Ż)){ȑ[e].Ź.RotorLock=false;ȑ[e].Ź.TargetVelocityRPM=0f;ȑ[e].Ź.Torque=0f;ȑ[e].Ź.BrakingTorque=0f;ɣ.Add(e);}else{ɤ.
+Add(ȑ[e].Ż);}}for(int e=ɣ.Count-1;e>=0;e--){ȑ.RemoveAt(ɣ[e]);}}ǹ.Clear();ǃ.Clear();foreach(var È in ȑ){È.Ś=È.ř;È.ř=0;È.ş=0;
+Ê(È.Ż,true);È.Ž.Clear();GridTerminalSystem.GetBlocksOfType(È.Ž,ɥ=>Ì.Contains(ɥ.CubeGrid));È.Ŵ.Clear();GridTerminalSystem.
+GetBlocksOfType(È.Ŵ,ɧ=>Ì.Contains(ɧ.CubeGrid));foreach(var m in È.Ž){if(!ǹ.Contains(m))ǹ.Add(m);È.ř+=m.MaxOutput;if(m.MaxOutput>È.ş)È.ş
+=m.MaxOutput;}foreach(var µ in È.Ŵ){if(!ǃ.Contains(µ))ǃ.Add(µ);È.ř+=µ.GetOutput();if(µ.GetOutput()>È.ş)È.ş=µ.GetOutput();
+}if(È.Ž.Count==0&&È.Ŵ.Count==0){h("'"+È.Ź.CustomName+"' can't see the sun!\nAdd a solar panel or oxygen farm to it!");}if
+(È.ř>È.Ŝ){È.Ŝ=È.ř;È.ŝ=ɂ(È.Ź);}}}if(useGyroMode){if(Me.CubeGrid.IsStatic){h(
+"The grid is stationary!\nConvert it to a ship in the Info tab!");}var ɦ=GridTerminalSystem.GetBlockGroupWithName(referenceGroupName);if(ɦ!=null){ɦ.GetBlocksOfType(ȃ);if(ȃ.Count==0){h(
+"There are no cockpits, flight seats or remote controls in the reference group:\n'"+referenceGroupName+"'");}}else{h(
+"Reference group not found!\nPut your main cockpit, flight seat or remote control in a group called '"+referenceGroupName+"'!");}GridTerminalSystem.GetBlocksOfType(Ȓ,ɒ=>ɒ.IsSameConstructAs(Me));if(Ȓ.Count==0){h(
+"No gyroscopes found!\nAre they enabled and completely built?");}GridTerminalSystem.GetBlocksOfType(ǹ,ɥ=>ɥ.IsSameConstructAs(Me));GridTerminalSystem.GetBlocksOfType(ǃ,ɧ=>ɧ.
+IsSameConstructAs(Me));if(ǹ.Count==0&&ǃ.Count==0){h("No solar panels or oxygen farms found!\nHow should I see the sun now?");}if(
+checkIntegrity){GridTerminalSystem.GetBlocksOfType(ȓ,ɨ=>ɨ.IsSameConstructAs(Me));}}if(Ǻ!=ǹ.Count){ɚ("solar panels");}else if(Ƙ!=ǃ.
+Count){ɚ("oxygen farms");}Ƽ.Clear();GridTerminalSystem.GetBlocksOfType(Ƽ,Ų=>Ų.IsSameConstructAs(Me)&&Ų.Enabled);if(Ƽ.Count==0
+){h("No batteries found!\nDon't you want to store your Power?");}ƙ.Clear();GridTerminalSystem.GetBlocksOfType(ƙ,ɨ=>ɨ.
+BlockDefinition.TypeIdString.Contains("WindTurbine")&&ɨ.IsSameConstructAs(Me)&&ɨ.Enabled);if(ƚ!=ƙ.Count){ƚ=ƙ.Count;ɚ("wind turbines");}
+ǅ.Clear();GridTerminalSystem.GetBlocksOfType(ǅ,ɨ=>!ɨ.BlockDefinition.SubtypeId.Contains("Hydrogen")&&ɨ.IsSameConstructAs(
+Me)&&ɨ.Enabled);if(useReactorFallback||useHydrogenEngineFallback){ǽ.Clear();foreach(var Í in fallbackDevices){var ɠ=
+GridTerminalSystem.GetBlockGroupWithName(Í);if(ɠ!=null){var ɕ=new List<IMyPowerProducer>();ɠ.GetBlocksOfType(ɕ,ɒ=>ɒ.BlockDefinition.
+TypeIdString.Contains("Reactor")||ɒ.BlockDefinition.TypeIdString.Contains("HydrogenEngine"));ǽ.AddRange(ɕ);}else{IMyPowerProducer ɓ=
+GridTerminalSystem.GetBlockWithName(Í)as IMyPowerProducer;if(ɓ!=null){ǽ.Add(ɓ);}else{h("Power fallback device not found:\n'"+Í+"'");}}}if(
+ǽ.Count==0){GridTerminalSystem.GetBlocksOfType(ǽ,ɒ=>(ɒ.BlockDefinition.TypeIdString.Contains("Reactor")||ɒ.
+BlockDefinition.TypeIdString.Contains("HydrogenEngine"))&&ɒ.IsSameConstructAs(Me));}if(!useReactorFallback)ǽ.RemoveAll(ɒ=>ɒ.
+BlockDefinition.TypeIdString.Contains("Reactor"));if(!useHydrogenEngineFallback)ǽ.RemoveAll(ɒ=>ɒ.BlockDefinition.TypeIdString.Contains(
+"HydrogenEngine"));ǯ=ǽ.Count(ɒ=>ɒ.BlockDefinition.TypeIdString.Contains("Reactor"));Ǳ=ǽ.Count(ɒ=>ɒ.BlockDefinition.TypeIdString.Contains
+("HydrogenEngine"));}foreach(var f in timers){ǐ=true;var ɔ=GridTerminalSystem.GetBlockWithName(f)as IMyTimerBlock;if(ɔ==
+null){h("Timer block not found:\n'"+f+"'\nTimer functions disabled!");ǐ=false;break;}}if(baseLightManagement){Ȋ.Clear();ǳ.
+Clear();if(baseLightGroups.Length>0){var ɖ=new List<IMyInteriorLight>();var ɞ=new List<IMyReflectorLight>();foreach(var ɗ in
+baseLightGroups){var ɘ=GridTerminalSystem.GetBlockGroupWithName(ɗ);if(ɘ!=null){ɘ.GetBlocksOfType(ɖ);Ȋ.AddRange(ɖ);ɘ.GetBlocksOfType(ɞ);
+ǳ.AddRange(ɞ);}else{h("Light group not found:\n'"+ɗ+"'");}}}else{GridTerminalSystem.GetBlocksOfType(Ȋ,ə=>ə.
+IsSameConstructAs(Me));GridTerminalSystem.GetBlocksOfType(ǳ,ə=>ə.IsSameConstructAs(Me));}}}void ɚ(string ɛ,bool ɜ=true){foreach(var È in
+ȑ){È.Ŝ=0;}ȍ=0;Ȏ=0;Ǻ=ǹ.Count;Ƙ=ǃ.Count;if(ɜ)h("Amount of "+ɛ+" has changed!\nResetting stored max values..");}bool ɝ(
+string ɑ){if(ɑ=="pause"){Ȫ();if(Ǐ){ǎ="";Ǐ=false;ǝ="Resuming..";}else{ǎ="paused";Ǐ=true;}}else if(ɑ=="stop"){Ȫ();Ǐ=true;ǎ=
+"paused";}else if(ɑ=="resume"){Ǐ=false;ǎ="";ǝ="Resuming..";}else if(ɑ=="paused"){}else if(ɑ=="realign"&&!useGyroMode){Ɋ();ǝ=
+"Forced realign by user.\n";ǝ+="Searching highest output for "+Ȉ+" more seconds.";if(Ȉ==0){ǎ="resume";Ȉ=90;}else{ǎ="realign";Ȉ-=1;}}else if(ɑ==
+"realign"&&useGyroMode){ǝ="Forced realign by user.\n";ǝ+="Resetted stored values and starting to pitch.";Ȣ();Ȅ=0;Ʒ=999;ƴ=true;Ȇ=0
+;ȅ=0;ȍ=0;ǎ="";}else if(ɑ=="reset"&&!useGyroMode){Ǣ=0;ǣ=30;ǧ=Ǧ;ǥ=Ǥ;h("Calculated time resetted.");}else if(ɑ.Contains(
+"rotate")&&!useGyroMode){String[]ɟ=ɑ.Split(' ');bool ɩ=false;Ǒ="both";Ǚ=false;if(ɟ[0].Contains("pause"))Ǚ=true;if(ɟ.Length==2){
+if(ɟ[1].Contains("t")){ɩ=Double.TryParse(ɟ[1].Replace("t",""),out ǒ);Ǒ="tiltOnly";}else if(ɟ[1].Contains("y")){ɩ=Double.
+TryParse(ɟ[1].Replace("y",""),out Ǔ);Ǒ="yawOnly";}else if(ɟ[1].Contains("sunrise")){ɩ=true;Ǒ="sunrise";}if(ɩ){ǝ=
+"Checking rotation parameters...";ǎ="rotNormal";}else{Ȫ();h("Wrong format!\n\nShould be:\nrotate h90 OR\nrotate v90");}}else if(ɟ.Length==3){string ɸ=
+"rotNormal";if(ɟ[1].Contains("y")){ɩ=Double.TryParse(ɟ[1].Replace("y",""),out Ǔ);if(ɩ)ɩ=Double.TryParse(ɟ[2].Replace("t",""),out ǒ)
+;ɸ="rotYT1";}else{ɩ=Double.TryParse(ɟ[1].Replace("t",""),out ǒ);if(ɩ)ɩ=Double.TryParse(ɟ[2].Replace("y",""),out Ǔ);}if(ɩ)
+{ǝ="Checking rotation parameters...";ǎ=ɸ;}else{Ȫ();h("Wrong format!\n\nShould be:\nrotate t90 y90 OR\nrotate y90 t90");}}
+else{Ȫ();h("Not enough parameters!\n\nShould be 2 or 3:\nrotate t90 OR\nrotate t90 y90");}}else if(ɑ=="rotNormal"){ǝ=
+"Rotating to user defined values...";bool ȡ=ȫ(Ǒ,ǒ,Ǔ);if(ȡ&&Ǚ){ǎ="pause";}else if(ȡ&&!Ǚ){ǎ="resume";}}else if(ɑ=="rotYT1"){ǝ=
+"Rotating to user defined values...";bool ȡ=ȫ("yawOnly",ǒ,Ǔ);if(ȡ)ǎ="rotYT2";}else if(ɑ=="rotYT2"){ǝ="Rotating to user defined values...";bool ȡ=ȫ(
+"tiltOnly",ǒ,Ǔ);if(ȡ&&Ǚ){ǎ="pause";}else if(ȡ&&!Ǚ){ǎ="resume";}}else{return false;}if(ǎ=="paused"){ǝ=
+"Automatic alignment paused.\n";ǝ+="Run 'pause' again or 'resume' to continue..";}return true;}void ɹ(){foreach(var È in ȑ){var ĥ=È.Ź.CustomData.Split(
+'\n');foreach(var y in ĥ){var z=y.Split('=');if(z.Length!=2)continue;if(z[0]=="Output"){È.ř=z[1].Œ();}else if(z[0]==
+"OutputLast"){È.Ś=z[1].Œ();}else if(z[0]=="OutputLocked"){È.ś=z[1].Œ();}else if(z[0]=="OutputMax"){È.Ŝ=z[1].Œ();}else if(z[0]==
+"OutputMaxAngle"){È.ŝ=z[1].Œ();}else if(z[0]=="OutputMaxDayBefore"){È.Ş=z[1].Œ();}else if(z[0]=="OutputBestPanel"){È.ş=z[1].Œ();}else if
+(z[0]=="Direction"){È.Š=z[1].Ŗ();}else if(z[0]=="DirectionChanged"){È.š=z[1].ŗ();}else if(z[0]=="DirectionTimer"){È.ţ=z[1
+].Ŗ();}else if(z[0]=="AllowRotation"){È.Ū=z[1].ŗ();}else if(z[0]=="RotationDone"){È.Ť=z[1].ŗ();}else if(z[0]==
+"TimeSinceRotation"){È.ť=z[1].Ŗ();}else if(z[0]=="FirstLockOfDay"){È.ŧ=z[1].ŗ();}else if(z[0]=="SunriseAngle"){È.Ũ=z[1].Œ();}}}}void ɺ(){
+foreach(var È in ȑ){List<string>ɻ=new List<string>();ɻ.Add("Output="+È.ř);ɻ.Add("OutputLast="+È.Ś);ɻ.Add("OutputLocked="+È.ś);ɻ
+.Add("OutputMax="+È.Ŝ);ɻ.Add("OutputMaxAngle="+È.ŝ);ɻ.Add("OutputMaxDayBefore="+È.Ş);ɻ.Add("OutputBestPanel="+È.ş);ɻ.Add(
+"Direction="+È.Š);ɻ.Add("DirectionChanged="+È.š);ɻ.Add("DirectionTimer="+È.ţ);ɻ.Add("AllowRotation="+È.Ū);ɻ.Add("RotationDone="+È.Ť)
+;ɻ.Add("TimeSinceRotation="+È.ť);ɻ.Add("FirstLockOfDay="+È.ŧ);ɻ.Add("SunriseAngle="+È.Ũ);È.Ź.CustomData=String.Join("\n",
+ɻ);}}void ɼ(){string ɽ=" is damaged! Repair it for maximum ";string ɾ=" is turned off! Turn it on for more ";List<
+IMyTerminalBlock>ɿ=new List<IMyTerminalBlock>(Ǵ);foreach(var ķ in ɿ){if(ķ.CubeGrid.GetCubeBlock(ķ.Position).IsFullIntegrity){ɬ(ķ,true);}
+}foreach(var m in ǹ){if(!m.Enabled)h(m.CustomName+ɾ+"solar power!");if(!m.CubeGrid.GetCubeBlock(m.Position).
+IsFullIntegrity){h(m.CustomName+ɽ+"solar power!");ɬ(m);}}foreach(var ʀ in ƙ){if(!ʀ.Enabled)h(ʀ.CustomName+ɾ+"wind power!");if(!ʀ.
+CubeGrid.GetCubeBlock(ʀ.Position).IsFullIntegrity){h(ʀ.CustomName+ɽ+"wind power!");ɬ(ʀ);}}foreach(var µ in ǃ){if(!µ.Enabled)h(µ.
+CustomName+ɾ+"oxygen production!");if(!µ.CubeGrid.GetCubeBlock(µ.Position).IsFullIntegrity){h(µ.CustomName+ɽ+"oxygen production!")
+;ɬ(µ);}}foreach(var u in Ƽ){if(!u.Enabled)h(u.CustomName+ɾ+"power storage!");if(!u.CubeGrid.GetCubeBlock(u.Position).
+IsFullIntegrity){h(u.CustomName+ɽ+"power storage!");ɬ(u);}if(u.CurrentStoredPower==0){h(u.CustomName+
+" is completely empty! Build more solar panels or wind turbines to keep it filled!");}}if(!useGyroMode){foreach(var È in ȑ){if(!È.Ź.CubeGrid.GetCubeBlock(È.Ź.Position).IsFullIntegrity){h(È.Ź.CustomName+
+" is damaged! Repair it to align your towers!");ɬ(È.Ź);}try{if(È.ź==À&&È.Ź.GetValueBool("ShareInertiaTensor")==true){h(È.Ź.CustomName+" has intertia tensor enabled! Rotors directly attached to the base should never have it enabled because they are too weak to move the solar tower that way!"
+);}}catch{}}}if(useGyroMode){foreach(var Ȟ in Ȓ){if(!Ȟ.Enabled)h(Ȟ.CustomName+ɾ+"alignment force!");if(!Ȟ.CubeGrid.
+GetCubeBlock(Ȟ.Position).IsFullIntegrity){h(Ȟ.CustomName+ɽ+"alignment force!");ɬ(Ȟ);}}foreach(var ɷ in ȓ){if(!ɷ.Enabled)h(ɷ.
+CustomName+ɾ+"stability!");if(!ɷ.CubeGrid.GetCubeBlock(ɷ.Position).IsFullIntegrity){h(ɷ.CustomName+ɽ+"stability!");ɬ(ɷ);}}}if(
+useReactorFallback||useHydrogenEngineFallback){foreach(var ɪ in ǽ){if(!ɪ.CubeGrid.GetCubeBlock(ɪ.Position).IsFullIntegrity){h(ɪ.CustomName
++ɽ+"emergency power!");ɬ(ɪ);}if(ɪ is IMyReactor){if(ɪ.GetInventory(0).CurrentVolume==0){h(ɪ.CustomName+
+" has no fuel! Fill it for maximum emergency power!");}}else{if(ɪ.DetailedInfo.Contains("Filled: 0.0%")){h(ɪ.CustomName+" has no fuel! Fill it for maximum emergency power!"
+);}}}}if(baseLightManagement){foreach(var æ in Ȋ){if(!æ.CubeGrid.GetCubeBlock(æ.Position).IsFullIntegrity){h(æ.CustomName
++ɽ+"illumination!");ɬ(æ);}}foreach(var ɫ in ǳ){if(!ɫ.CubeGrid.GetCubeBlock(ɫ.Position).IsFullIntegrity){h(ɫ.CustomName+ɽ+
+"illumination!");ɬ(ɫ);}}}}void ɬ(IMyTerminalBlock ķ,bool ɭ=false){string ɮ="DAMAGED: ";if(ɭ){Ǵ.Remove(ķ);if(showDamagedBlockOnHud)ķ.
+ShowOnHUD=false;if(addDamageTextToName&&ķ.CustomName.Contains(ɮ))ķ.CustomName=ķ.CustomName.Replace(ɮ,"");}else{Ǵ.Add(ķ);if(
+showDamagedBlockOnHud)ķ.ShowOnHUD=true;if(addDamageTextToName&&!ķ.CustomName.Contains(ɮ))ķ.CustomName=ɮ+ķ.CustomName;}}void ɯ(){if(ƙ.Count==0
+)return;if(ȋ==0){if(ƞ){ǎ="resume";ƞ=false;Ơ=0;ǈ="goodweather";}return;}Ɵ=false;if(ƞ){if((DateTime.Now-Ƭ).TotalMinutes>
+maxBadWeatherMinutes){Ɵ=true;}}if(Ɯ>Ȏ*1.4){h("There's a storm. Solar panel alignment slowed down.");ƞ=true;}else if(Ɯ>=Ȏ*1.05&&ȋ<=ȍ*0.9){h(
+"It's raining. Solar panel alignment slowed down.");ƞ=true;}else if(Ɯ<=Ȏ*0.55){h("It's foggy or snowing. Solar panel alignment slowed down.");ƞ=true;}else if(ƞ){Ɵ=true;}
+if(Ɵ){ɚ("",false);ƞ=false;Ơ=3;rotorMaxSpeed=Ƣ;Ƣ=-1;ǈ="goodweather";}if(ƞ&&Ƣ==-1){Ƭ=DateTime.Now;Ƣ=rotorMaxSpeed;
+rotorMaxSpeed=rotorMinSpeed;ǈ="badweather";}}void ɰ(){Ȍ=ȋ;ȋ=0;ȏ=0;foreach(var m in ǹ){ȋ+=m.MaxOutput;ȏ+=m.CurrentOutput;if(
+showSolarStats&&enableTerminalStatistics){double ɱ;double.TryParse(m.CustomData,out ɱ);if(ɱ<m.MaxOutput){ɱ=m.MaxOutput;m.CustomData=ɱ.
+ToString();}Ȼ(m,true,"",m.MaxOutput,ɱ);}}foreach(var µ in ǃ){ȋ+=µ.GetOutput()/1000000;}ƛ=0;Ɯ=0;if(ƙ.Count>0)Ɲ=ƙ.Max(ɨ=>ɨ.
+MaxOutput);foreach(var ɲ in ƙ){ƛ+=ɲ.CurrentOutput;Ɯ+=ɲ.MaxOutput;if(showWindTurbineStats&&enableTerminalStatistics){Ȼ(ɲ,true,"",ɲ
+.MaxOutput,Ɲ);}}if(ȋ>ȍ){ȍ=ȋ;Ȏ=Ɯ;}ƥ=ȏ.Ņ();ƣ=ȋ.Ņ();Ƥ=ȍ.Ņ();Ɨ=ƛ.Ņ();ƭ=Ɯ.Ņ();ǆ=Ȏ.Ņ();ƽ=0;ƾ=0;ƿ=0;ǀ=0;ǁ=0;ǂ=0;foreach(var u in
+Ƽ){ƽ+=u.CurrentInput;ƾ+=u.MaxInput;ƿ+=u.CurrentOutput;ǀ+=u.MaxOutput;ǁ+=u.CurrentStoredPower;ǂ+=u.MaxStoredPower;if(
+showBatteryStats&&enableTerminalStatistics){string Ƚ="";if(u.CurrentStoredPower<u.MaxStoredPower*0.99){Ƚ="Draining";if(u.CurrentInput>u.
+CurrentOutput)Ƚ="Recharging";}Ȼ(u,true,Ƚ,u.CurrentStoredPower,u.MaxStoredPower);}}Ʀ=ƽ.Ņ();Ƨ=ƾ.Ņ();ƨ=ƿ.Ņ();Ʃ=ǀ.Ņ();ƪ=ǁ.Ņ(true);ƫ=ǂ.Ņ(
+true);ƹ=0;Ʈ=0;ơ=0;foreach(var µ in ǃ){ƹ+=µ.GetOutput();if(showOxygenFarmStats&&enableTerminalStatistics){Ȼ(µ,true,"",µ.
+GetOutput(),1);}}ƹ=Math.Round(ƹ/ǃ.Count*100,2);foreach(var v in ǅ){Ʈ+=v.Capacity;ơ+=v.Capacity*v.FilledRatio;if(
+showOxygenTankStats&&enableTerminalStatistics){Ȼ(v,true,"",v.FilledRatio,1);}}Ǜ=Ʈ.ŉ();ǜ=ơ.ŉ();}void ɳ(){if(Ȓ.Count==0||ȃ.Count==0)return;if
+(autoPauseGyroMode&&ȃ[0].IsUnderControl){Ȫ();ǝ="Automatic alignment paused.\n";ǝ+=
+"Ship is currently controlled by a player.";return;}if(Ǆ){double ɴ=Math.Round((DateTime.Now-ƻ).TotalSeconds);if(ɴ<noSunPause){ǝ="No sun in sight! Realigning in "+(
+noSunPause-ɴ)+"s..";Ʒ=999;ƴ=true;return;}}int ǿ=10;bool ɵ=false;bool ɶ=false;bool ʁ=false;string ȩ="";double Ŕ=ȋ;double Ȯ=ȍ==0?1:ȍ
+;double ȯ=Ȍ;Ǆ=(Ŕ==0||Ŕ<=ȍ*0.1);double Ț=maxGyroRPM-(maxGyroRPM-minGyroRPM)*(Ŕ/Ȯ);Ț=Ț/(Math.PI*3);if((!Ŕ.ğ(Ȅ-Ȅ*
+realignPercentageGyro,Ȅ+Ȅ*realignPercentageGyro)||Ǆ)&&ƴ&&Ʒ>=ǿ){Ƶ=false;ƶ=false;Ȅ=0;if(Ŕ<ȯ&&Ʊ==3&&!ǲ){ȇ=-ȇ;Ʊ=0;ǲ=true;}ȳ((float)(ȇ*Ț),0,0);if(
+ȇ==-1){ȩ="down";}else{ȩ="up";}if((Ŕ<ȯ&&Ʊ>=4)||(Ǆ&&Ʊ>10)){Ȣ();if(!Ǆ){Ƶ=true;ƶ=true;}Ȅ=Ŕ;ȅ=Ŕ;ǲ=false;Ʊ=0;Ʒ=0;}else{ɵ=true;Ʊ
+++;}}else if(ƴ){Ȣ();Ƶ=true;ƶ=true;ǲ=false;Ʊ=0;Ʒ++;}else{Ʒ++;}if((!Ŕ.ğ(Ȇ-Ȇ*realignPercentageGyro,Ȇ+Ȇ*realignPercentageGyro)
+||Ǆ)&&ƶ&&ƺ>=ǿ){ƴ=false;Ƶ=false;Ȇ=0;if(Ŕ<ȯ&&Ƴ==3&&!ư){ȗ=-ȗ;Ƴ=0;ư=true;}ȳ(0,0,(float)(ȗ*Ț));if(ȗ==-1){ȩ="left";}else{ȩ=
+"right";}if(Ŕ<ȯ&&Ƴ>=4){Ȣ();ƴ=true;Ƶ=true;Ȇ=Ŕ;ư=false;Ƴ=0;ƺ=0;}else{ɶ=true;Ƴ++;}}else if(ƶ){Ȣ();ƴ=true;Ƶ=true;ư=false;Ƴ=0;ƺ++;}
+else{ƺ++;}if(!Ŕ.ğ(ȅ-ȅ*realignPercentageGyro,ȅ+ȅ*realignPercentageGyro)&&Ƶ&&Ƹ>=ǿ){ƴ=false;ƶ=false;ȅ=0;if(Ŕ<ȯ&&Ʋ==3&&!ǰ){ȉ=-ȉ;
+Ʋ=0;ǰ=true;}ȳ(0,(float)(ȉ*Ț),0);if(ȉ==-1){ȩ="left";}else{ȩ="right";}if(Ŕ<ȯ&&Ʋ>=4){Ȣ();ƴ=true;ƶ=true;ȅ=Ŕ;Ȅ=Ŕ;ǰ=false;Ʋ=0;Ƹ
+=0;}else{ʁ=true;Ʋ++;}}else if(Ƶ){Ȣ();ƴ=true;ƶ=true;ǰ=false;Ʋ=0;Ƹ++;}else{Ƹ++;}if(!ɵ&&!ʁ&&!ɶ){if(Ǆ){ƻ=DateTime.Now;}else{ǝ
+="Aligned.";}}else if(ɵ){ǝ="Aligning by pitching the ship "+ȩ+"..";}else if(ʁ){ǝ="Aligning by yawing the ship "+ȩ+"..";}
+else if(ɶ){ǝ="Aligning by rolling the ship "+ȩ+"..";}}void Ȱ(){if(ȑ.Count==0)return;if(ȋ<ȍ*nightPercentage&&Ǿ>=30){ǝ=
+"Night Mode.";ǻ=true;if(rotateToSunrise&&!Ǽ){Ǽ=ȫ("sunrise");if(Ǽ){foreach(var È in ȑ){È.ŧ=true;È.Ť=false;}}}else{Ȫ();}return;}if(ǻ){ǻ
+=false;Ǿ=0;foreach(var È in ȑ){È.Ş=È.Ŝ;È.Ŝ=0;}}else if(Ǿ>172800){Ǿ=0;}else{Ǿ++;}Ǽ=false;Ȃ=true;ǿ=ȋ<ȍ*0.5?30:10;ȱ();if(Ȁ==
+0&&ȁ==0){ǝ="Aligned.";}else if(Ȁ==0){ǝ="Aligning "+ȁ+" tilt rotors..";}else if(ȁ==0){ǝ="Aligning "+Ȁ+" yaw rotors..";}
+else{ǝ="Aligning "+ȁ+" tilt and "+Ȁ+" yaw rotors..";}}void ȱ(){ȁ=0;Ȁ=0;foreach(var È in ȑ){bool Ȳ=false;if(È.Ū==false||È.ť<ǿ
+){Ƞ(È);È.Ū=true;È.ť+=1;continue;}if(!È.ř.ğ(È.ś-È.ś*realignPercentageRotor,È.ś+È.ś*realignPercentageRotor)){ȶ(È);È.ś=0;if(
+È.ř<È.Ś&&È.ţ==2&&È.š==false){È.Š*=-1;È.ţ=0;È.š=true;}if((È.Ź.LowerLimitDeg!=float.MinValue||È.Ź.UpperLimitDeg!=float.
+MaxValue)&&È.ţ>=5){double ȧ=ɂ(È.Ź);float ȹ=(float)Math.Round(È.Ź.LowerLimitDeg);float ȴ=(float)Math.Round(È.Ź.UpperLimitDeg);if(
+ȧ==ȹ||ȧ==360+ȹ||ȧ==ȴ||ȧ==360+ȴ){if(È.ř<È.Ś&&È.š==false){È.Š*=-1;È.ţ=0;È.š=true;}else{Ȳ=true;}}}bool ȵ=È.ř.ğ(È.Ŝ*0.998,È.Ŝ
+*1.002);float Ț=(float)(rotorMaxSpeed-rotorMaxSpeed*È.ř.ũ(È.Ŝ)+rotorMinSpeed);if(!ȵ)Ț+=rotorMinSpeed;ȸ(È.Ź,È.Š,Ț);if((È.ř
+<È.Ś&&!ȵ&&È.ţ>=3)||È.ř==0||Ȳ){Ƞ(È);if(È.ŧ==true){if(È.ř>È.Ş*0.9){È.ŧ=false;È.Ũ=ɂ(È.Ź);}}È.ś=È.ř;È.š=false;È.ţ=0;È.ť=0;}
+else{if(È.Ţ){ȁ++;}else{Ȁ++;}È.ţ++;}}else{Ƞ(È);}}}void ȶ(Ÿ ȷ){foreach(var È in ȑ){if(!È.Ŧ&&ȷ.Ţ&&ȷ.ź==È.ź){È.ś=0;È.Ū=true;È.ť=
+ǿ;È.Ŧ=true;}if(ȷ.ū&&ȷ.Ż==È.ź){Ƞ(È);È.Ū=false;È.Ŧ=false;}else if(ȷ.Ţ&&ȷ.ź==È.Ż){Ƞ(È);È.Ū=false;}}}void ȸ(IMyMotorStator È,
+double ȩ,float Ț){È.RotorLock=false;È.TargetVelocityRPM=Ț*(float)ȩ;}void ȳ(double Ȭ,double ȣ,double ț){Vector3D Ȝ=new Vector3D
+(-Ȭ,ȣ,ț);Vector3D ȝ=Vector3D.TransformNormal(Ȝ,ȃ[0].WorldMatrix);foreach(var Ȟ in Ȓ){Vector3D ȟ=Vector3D.TransformNormal(
+ȝ,Matrix.Transpose(Ȟ.WorldMatrix));Ȟ.GyroOverride=true;Ȟ.GyroPower=gyroPower;Ȟ.Pitch=(float)ȟ.X;Ȟ.Yaw=(float)ȟ.Y;Ȟ.Roll=(
+float)ȟ.Z;}}void Ƞ(Ÿ È,bool ȡ=true){È.Ź.TargetVelocityRPM=0f;È.Ť=ȡ;if(setRotorLockWhenStopped){È.Ź.RotorLock=true;}}void Ȣ(){
+foreach(var Ȟ in Ȓ){Ȟ.Pitch=0;Ȟ.Yaw=0;Ȟ.Roll=0;Ȟ.GyroOverride=false;}}void Ȫ(bool ȡ=true){foreach(var È in ȑ){Ƞ(È,ȡ);È.ť=0;}Ȣ()
+;Ʒ=0;Ƹ=0;ƺ=0;}bool Ȥ(Ÿ È,double ȥ,bool Ȧ=true){double ȧ=ɂ(È.Ź);bool Ȩ=false;if(Ȧ){if(È.Ź.CustomName.IndexOf("[90]")>=0){ȥ
++=90;}else if(È.Ź.CustomName.IndexOf("[180]")>=0){ȥ+=180;}else if(È.Ź.CustomName.IndexOf("[270]")>=0){ȥ+=270;}if(ȥ>=360)ȥ
+-=360;if(È.Ź.Orientation.Up.ToString()=="Down"){Ȩ=true;}else if(È.Ź.Orientation.Up.ToString()=="Backward"){Ȩ=true;}else if
+(È.Ź.Orientation.Up.ToString()=="Left"){Ȩ=true;}}if(È.Ź.LowerLimitDeg!=float.MinValue||È.Ź.UpperLimitDeg!=float.MaxValue)
+{if(Ȩ)ȥ=-ȥ;if(ȥ>È.Ź.UpperLimitDeg){ȥ=Math.Floor(È.Ź.UpperLimitDeg);}if(ȥ<È.Ź.LowerLimitDeg){ȥ=Math.Ceiling(È.Ź.
+LowerLimitDeg);}}else{if(Ȩ)ȥ=360-ȥ;}if(ȧ.ğ(ȥ-1,ȥ+1)||ȧ.ğ(360+ȥ-1,360+ȥ+1)){Ƞ(È);return true;}else{int ȩ=ȧ<ȥ?1:-1;if(ȧ<=90&&ȥ>=270){ȩ=
+-1;}if(ȧ>=270&&ȥ<=90){ȩ=1;}Single Ț=Math.Abs(ȧ-ȥ)>15?1f:0.2f;if(Math.Abs(ȧ-ȥ)<3)Ț=0.1f;ȸ(È.Ź,ȩ,Ț);return false;}}bool ȫ(
+string Ⱥ,double Ɇ=0,double ɇ=0){bool ȡ=true;int Ɉ=0;int ɉ=0;if(Ȃ){Ȃ=false;Ȫ(false);}if(Ⱥ!="yawOnly"){foreach(var È in ȑ){if(È.
+ū)continue;if(È.Ť)continue;bool Ȧ=true;double ȥ=Ɇ;if(Ⱥ=="sunrise"){ȥ=manualAngle?manualAngleTilt:È.Ũ;Ȧ=false;}if(!Ȥ(È,ȥ,Ȧ
+)){ȡ=false;ɉ++;Ǟ=ɉ+" tilt rotors are set to "+Ɇ+"°";if(Ⱥ=="sunrise")Ǟ=ɉ+" tilt rotors are set to sunrise position";}}}if(
+!ȡ)return false;if(Ⱥ!="tiltOnly"){foreach(var È in ȑ){if(È.Ţ)continue;if(È.Ť)continue;bool Ȧ=true;double ȥ=ɇ;if(Ⱥ==
+"sunrise"){ȥ=manualAngle?manualAngleYaw:È.Ũ;Ȧ=false;}if(!Ȥ(È,ȥ,Ȧ)){ȡ=false;Ɉ++;Ǟ=Ɉ+" yaw rotors are set to "+ɇ+"°";if(Ⱥ==
+"sunrise")Ǟ=Ɉ+" yaw rotors are set to sunrise position";}}}if(ȡ)Ȃ=true;return ȡ;}void Ɋ(){int ɉ=0;int Ɉ=0;if(Ȉ==90){foreach(var È
+in ȑ){Ƞ(È,false);int ɋ=1;if(È.Ź.Orientation.Up.ToString()=="Up"){ɋ=-1;}else if(È.Ź.Orientation.Up.ToString()=="Forward"){ɋ
+=-1;}else if(È.Ź.Orientation.Up.ToString()=="Right"){ɋ=-1;}È.Ŝ=È.ř;È.Š=ɋ;È.š=false;È.ţ=0;ȍ=0;}}foreach(var È in ȑ){if(È.ū
+)continue;if(È.Ť)continue;if(È.Ŝ==0)È.Ŝ=1;if(È.š==false){ɉ++;if(È.ř<È.Ś&&È.ţ>=7&&È.š==false){È.Š*=-1;È.š=true;È.ţ=0;}if((
+È.Ź.LowerLimitDeg!=float.MinValue||È.Ź.UpperLimitDeg!=float.MaxValue)&&È.ţ>=3&&È.š==false){double Ɍ=ɂ(È.Ź);float ɍ=(float
+)Math.Round(È.Ź.LowerLimitDeg);float Ɏ=(float)Math.Round(È.Ź.UpperLimitDeg);if(Ɍ==ɍ||Ɍ==360+ɍ||Ɍ==Ɏ||Ɍ==360+Ɏ){È.Š*=-1;È.
+š=true;È.ţ=0;}}ȸ(È.Ź,È.Š,(float)(2.75-È.ř.ũ(È.Ŝ)*2));if(È.ř<È.Ś&&È.ţ>=7&&È.š==true){Ƞ(È,false);È.š=true;}else{È.ţ+=1;}}
+else{if(!Ȥ(È,È.ŝ,false))ɉ++;}}if(ɉ!=0)return;foreach(var È in ȑ){if(È.Ţ)continue;if(È.Ť)continue;if(È.Ŝ==0)È.Ŝ=1;if(È.š==
+false){Ɉ++;if(È.ř<È.Ś&&È.ţ>=7&&È.š==false){È.Š*=-1;È.š=true;È.ţ=0;}if((È.Ź.LowerLimitDeg!=float.MinValue||È.Ź.UpperLimitDeg!=
+float.MaxValue)&&È.ţ>=3&&È.š==false){double ɏ=ɂ(È.Ź);float ɐ=(float)Math.Round(È.Ź.LowerLimitDeg);float Ʌ=(float)Math.Round(È
+.Ź.UpperLimitDeg);if(ɏ==ɐ||ɏ==360+ɐ||ɏ==Ʌ||ɏ==360+Ʌ){È.Š*=-1;È.š=true;È.ţ=0;}}ȸ(È.Ź,È.Š,(float)(2.75-È.ř.ũ(È.Ŝ)*2));if(È.
+ř<È.Ś&&È.ţ>=7&&È.š==true){Ƞ(È,false);È.š=true;}else{È.ţ+=1;}}else{if(!Ȥ(È,È.ŝ,false))Ɉ++;}}if(ɉ==0&&Ɉ==0){Ȉ=0;}}void Ȼ(
+IMyTerminalBlock ķ,bool ȼ=true,string Ƚ="",double Ⱦ=0,double ȿ=0){string ɀ=ķ.CustomName;string Ɂ=System.Text.RegularExpressions.Regex.
+Match(ķ.CustomName,@" *\(\d+\.*\d*%.*\)").Value;if(Ɂ!=String.Empty){ɀ=ķ.CustomName.Replace(Ɂ,"");}if(ȼ){ɀ+=" ("+Ⱦ.Ń(ȿ);if(Ƚ!=
+""){ɀ+=", "+Ƚ;}ɀ+=")";}if(ɀ!=ķ.CustomName){ķ.CustomName=ɀ;}}double ɂ(IMyMotorStator È){return Math.Round(È.Angle*180/Math.
+PI);}StringBuilder Ƀ(IMyTextSurface U,bool þ=true,bool ú=true,bool õ=true,bool ð=true,bool è=true,bool é=true,bool ê=true,
+bool ë=true){bool û=false;StringBuilder í=new StringBuilder();if(þ){í.Append("Isy's Solar Alignment "+Ǡ[ǡ]+"\n");í.Append(U.
+Ƈ('=',U.ƕ(í))).Append("\n\n");}if(ú&&ė!=null){í.Append("Warning!\n"+ė+"\n\n");û=true;}if(õ){string Ʉ=ǝ+"\n"+ǟ;í.Append(Ʉ)
+;í.Append('\n'.ŏ(3-Ʉ.Count(Ɩ=>Ɩ=='\n')));û=true;}if(ð){í.Append("Statistics for "+ǹ.Count+" Solar Panels:\n");í.Append(ª(
+U,"Efficiency",ȋ,ȍ,ƣ,Ƥ));í.Append(ª(U,"Output",ȏ,ȋ,ƥ,ƣ)+"\n\n");û=true;}if(è&&ƙ.Count>0){í.Append("Statistics for "+ƙ.
+Count+" Wind Turbines:\n");í.Append(ª(U,"Efficiency",Ɯ,Ȏ,ƭ,ǆ));í.Append(ª(U,"Output",ƛ,Ɯ,Ɨ,ƭ)+"\n\n");û=true;}if(é&&Ƽ.Count>0
+){í.Append("Statistics for "+Ƽ.Count+" Batteries:\n");í.Append(ª(U,"Input",ƽ,ƾ,Ʀ,Ƨ));í.Append(ª(U,"Output",ƿ,ǀ,ƨ,Ʃ));í.
+Append(ª(U,"Charge",ǁ,ǂ,ƪ,ƫ)+"\n\n");û=true;}if(ê&&(ǃ.Count>0||ǅ.Count>0)){í.Append("Statistics for Oxygen:\n");if(ǃ.Count>0){
+í.Append(ª(U,ǃ.Count+" Farms",ƹ,100));}if(ǅ.Count>0){í.Append(ª(U,ǅ.Count+" Tanks",ơ,Ʈ,ǜ,Ǜ));}í.Append("\n\n");û=true;}if
+(ë&&!useGyroMode){string ö="";string Į="";string ø="";if(ǥ<Ǣ){Į=" inaccurate";ö="*";}else if(ǥ==Ǥ||ǧ==Ǧ){Į=
+" inaccurate, still calculating";ö="*";}if(Ǣ<ǧ&&ö==""){ø=" / Sunset in: "+Ċ(ǧ-Ǣ);}else if(Ǣ>ǧ&&ö==""){ø=" / Sunrise in: "+Ċ(ǥ-Ǣ);}í.Append(
+"Time of your location:\n");í.Append("Time: "+Ā(Ǣ)+ø+ö+"\n");í.Append("Sunrise: "+Ā(ǥ)+" / Daylength: "+Ċ(ǧ)+ö+"\n");í.Append("Sunset: "+Ā(ǧ)+
+" / Nightlength: "+Ċ(ǥ-ǧ)+ö+"\n");if(ö!=""){í.Append(ö+Į);}û=true;}if(!û){í.Append("-- No informations to show --");}return í;}
+StringBuilder ù(IMyTextSurface U,bool ð=false,bool è=false,bool é=false,bool ê=false,bool ë=false,bool ò=false){bool û=false;
+StringBuilder í=new StringBuilder();if(ð){í.Append("Statistics for "+ǹ.Count+" Solar Panels:\n");í.Append(ª(U,"Efficiency",ȋ,ȍ,ƣ,Ƥ,D:
+true));í.Append(ª(U,"Output",ȏ,ȋ,ƥ,ƣ,D:true));û=true;}if(è&&ƙ.Count>0){if(û)í.Append("\n");í.Append("Statistics for "+ƙ.
+Count+" Wind Turbines:\n");í.Append(ª(U,"Output",ƛ,Ɯ,Ɨ,ƭ,D:true));û=true;}if(é&&Ƽ.Count>0){if(û)í.Append("\n");í.Append(
+"Statistics for "+Ƽ.Count+" Batteries:\n");í.Append(ª(U,"Input",ƽ,ƾ,Ʀ,Ƨ,D:true));í.Append(ª(U,"Output",ƿ,ǀ,ƨ,Ʃ,D:true));í.Append(ª(U,
+"Charge",ǁ,ǂ,ƪ,ƫ,D:true));û=true;}if(ê&&(ǃ.Count>0||ǅ.Count>0)){if(û)í.Append("\n");í.Append("Statistics for Oxygen:\n");if(ǃ.
+Count>0){í.Append(ª(U,ǃ.Count+" Farms",ƹ,100,D:true));}if(ǅ.Count>0){í.Append(ª(U,ǅ.Count+" Tanks",ơ,Ʈ,ǜ,Ǜ,D:true));}û=true;}
+if(ë){if(û)í.Append("\n");if(useGyroMode){í.Append("Location time is not available in gyro mode!");}else{string ü=Ā(Ǣ);í.
+Append(U.Ƈ(' ',(U.Ɔ()-U.ƕ(ü))/2)).Append(ü+"\n");}û=true;}if(ò){if(û)í.Append("\n");string ü=DateTime.Now.ToString(@"HH:mm:ss"
+);í.Append(U.Ƈ(' ',(U.Ɔ()-U.ƕ(ü))/2)).Append(ü+"\n");û=true;}if(!û){í.Append(
+"Edit the custom data and set,\nwhat should be shown here!");}return í;}void ý(string j=null){if(Ȕ.Count==0){Ǘ++;return;}for(int e=ǵ;e<Ȕ.Count;e++){if(Ĝ())return;ǵ++;var ï=Ȕ[e].Ŀ(
+mainLcdKeyword);foreach(var ñ in ï){var ó=ñ.Key;var x=ñ.Value;bool þ=x.ĩ("showHeading");bool ú=x.ĩ("showWarnings");bool õ=x.ĩ(
+"showCurrentOperation");bool ð=x.ĩ("showSolarStats");bool è=x.ĩ("showTurbineStats");bool é=x.ĩ("showBatteryStats");bool ê=x.ĩ(
+"showOxygenStats");bool ë=x.ĩ("showLocationTime");bool ì=x.ĩ("scrollTextIfNeeded");StringBuilder í=new StringBuilder();if(j!=null){í.
+Append(j);}else{í=Ƀ(ó,þ,ú,õ,ð,è,é,ê,ë);}í=ó.ƍ(í,þ?3:0,ì);ó.WriteText(í);}}Ǘ++;ǵ=0;}void î(){if(ȕ.Count==0){Ǘ++;return;}for(int
+e=Ƕ;e<ȕ.Count;e++){if(Ĝ())return;Ƕ++;var ï=ȕ[e].Ŀ(compactLcdKeyword);foreach(var ñ in ï){var ó=ñ.Key;var x=ñ.Value;bool ð
+=x.ĩ("showSolarStats");bool è=x.ĩ("showTurbineStats");bool é=x.ĩ("showBatteryStats");bool ê=x.ĩ("showOxygenStats");bool ë
+=x.ĩ("showLocationTime");bool ò=x.ĩ("showRealTime");bool ì=x.ĩ("scrollTextIfNeeded");StringBuilder í=new StringBuilder();
+í=ù(ó,ð,è,é,ê,ë,ò);í=ó.ƍ(í,0,ì);ó.WriteText(í);}}Ǘ++;Ƕ=0;}void ç(){if(Ȗ.Count==0){Ǘ++;return;}StringBuilder ô=new
+StringBuilder();if(ǌ.Count==0){ô.Append("- No problems detected -");}else{int ÿ=1;foreach(var ė in ǌ){ô.Append(ÿ+". "+ė.Replace("\n",
+" ")+"\n");ÿ++;}}for(int e=Ƿ;e<Ȗ.Count;e++){if(Ĝ())return;Ƿ++;var ï=Ȗ[e].Ŀ(warningsLcdKeyword);foreach(var ñ in ï){var ó=ñ.
+Key;var x=ñ.Value;bool þ=x.ĩ("showHeading");bool ì=x.ĩ("scrollTextIfNeeded");StringBuilder í=new StringBuilder();if(þ){í.
+Append("Isy's Solar Alignment Warnings\n");í.Append(ó.Ƈ('=',ó.ƕ(í))).Append("\n\n");}í.Append(ô);í=ó.ƍ(í,þ?3:0,ì);ó.WriteText(
+í);}}Ǘ++;Ƿ=0;}void Ę(){if(Ș.Count==0){Ǘ++;return;}for(int e=Ǹ;e<Ș.Count;e++){if(Ĝ())return;Ǹ++;var ï=Ș[e].Ŀ(
+performanceLcdKeyword);foreach(var ñ in ï){var ó=ñ.Key;var x=ñ.Value;bool þ=x.ĩ("showHeading");bool ì=x.ĩ("scrollTextIfNeeded");StringBuilder
+í=new StringBuilder();if(þ){í.Append("Isy's Solar Alignment Performance\n");í.Append(ó.Ƈ('=',ó.ƕ(í))).Append("\n\n");}í.
+Append(Ú);í=ó.ƍ(í,þ?3:0,ì);ó.WriteText(í);}}Ǘ++;Ǹ=0;}void ę(){if(ã==99){ã=0;}else{ã++;}Echo("Isy's Solar Alignment "+Ǡ[ǡ]+
+"\n========================\n");if(ė!=null){Echo("Warning!\n"+ė+"\n");}StringBuilder í=new StringBuilder();StringBuilder Ě=new StringBuilder();Ě.
+Append(ǝ+"\n"+ǟ+"\n\n");í.Append("Script is running in "+(useGyroMode?"gyro":"rotor")+" mode\n\n");í.Append("Task: "+ǘ[ǔ]+"\n"
+);í.Append("Script step: "+ǔ+" / "+(ǘ.Length-1)+"\n\n");í.Append(Ú);í.Append("Main Grid: "+À.CustomName+"\n");if(ȑ.Count>
+0)í.Append("Rotors: "+ȑ.Count+"\n");if(Ȓ.Count>0)í.Append("Gyros: "+Ȓ.Count+"\n");if(ǹ.Count>0)í.Append("Solar Panels: "+
+ǹ.Count+"\n");if(ƙ.Count>0)í.Append("Wind Turbines: "+ƙ.Count+"\n");if(ǃ.Count>0)í.Append("Oxygen Farms: "+ǃ.Count+"\n");
+if(ǅ.Count>0)í.Append("Oxygen Tanks: "+ǅ.Count+"\n");if(Ƽ.Count>0)í.Append("Batteries: "+Ƽ.Count+"\n");if(ǯ>0)í.Append(
+"Reactors: "+ǯ+"\n");if(Ǳ>0)í.Append("Hydrogen Engines: "+Ǳ+"\n");if(Ȕ.Count>0)í.Append("Main LCDs: "+Ȕ.Count+"\n");if(ȕ.Count>0)í.
+Append("Compact LCDs: "+ȕ.Count+"\n");if(Ȗ.Count>0)í.Append("Warning LCDs: "+Ȗ.Count+"\n");if(Ș.Count>0)í.Append(
+"Performance LCDs: "+Ș.Count+"\n");if(Ȋ.Count>0)í.Append("Lights: "+Ȋ.Count+"\n");if(ǳ.Count>0)í.Append("Spotlights: "+ǳ.Count+"\n");if(
+timers.Length>0)í.Append("Timer Blocks: "+timers.Length+"\n");Ú=í;Echo(Ě.Append(í).ToString());if(Ȕ.Count==0){Echo(
+"Hint:\nBuild a LCD and add the main LCD\nkeyword '"+mainLcdKeyword+"' to its name to get\nmore informations about your base\nand the current script actions.\n");}}void ě()
+{Ǣ+=1;ǣ+=1;double ĝ=(DateTime.Now-Ǩ).TotalSeconds;if(ĝ<ǩ){ǩ=ĝ;}Ǩ=DateTime.Now;if(Ǣ>172800){Ǣ=0;ǣ=0;}if(ƞ)return;if(Ơ>0){Ơ
+--;return;}double Ė=ȍ*nightTimePercentage;if(ȋ<Ė&&Ȍ>=Ė&&ǣ>50){ǧ=Ǣ;ǣ=0;}if(ȋ>Ė&&Ȍ<=Ė&&ǣ>50){if(ǧ!=Ǧ){ǥ=Ǣ;}Ǣ=0;ǣ=0;}if(ǧ>ǥ){
+ǥ=ǧ*2;}}string Ā(double ĉ,bool ā=false){ĉ=ĉ%ǥ;double Ă=ǧ+(ǥ-ǧ)/2;double ă=ǥ/24;double ü;if(ĉ<Ă){ü=(ĉ+(ǥ-Ă))/ă;}else{ü=(ĉ-
+Ă)/ă;}double Ą=Math.Floor(ü);double ą=Math.Floor((ü%1*100)*0.6);string Ć=Ą.ToString("00");string ć=ą.ToString("00");
+string Ĉ=Ć+":"+ć;if(ā){return Ą.ToString();}else{return Ĉ;}}string Ċ(int Ĕ){TimeSpan ċ=TimeSpan.FromSeconds(Ĕ*ǩ);string Č=ċ.
+ToString(@"hh\:mm\:ss");return Č;}void č(){if(ǽ.Count==0)return;double Ď=turnOnAtPercent%100/100;double ď=turnOffAtPercent%100/
+100;double Đ=overloadPercentage%100/100;if(Ǉ=="lowBat"||Ǉ==""){if(activateOnLowBattery&&ǁ<ǂ*Ď){Ǭ=true;Ǉ="lowBat";}else if(
+activateOnLowBattery&&ǁ>ǂ*ď){Ǭ=false;Ǉ="";}}if(Ǉ=="overload"||Ǉ==""){if(activateOnOverload&&ƿ+ȏ+ƛ>(ǀ+ȋ+Ɯ)*Đ){Ǭ=true;Ǉ="overload";}else{Ǭ=
+false;Ǉ="";}}if(ǁ<ǚ||(Ǭ&&ǭ&&Ǯ)){ǭ=true;Ǯ=true;}else{if(activateHydrogenEngineFirst&&Ǳ>0){Ǯ=true;ǭ=false;}else if(!
+activateHydrogenEngineFirst&&ǯ>0){Ǯ=false;ǭ=true;}else{Ǯ=true;ǭ=true;}}ǚ=ǁ;foreach(var đ in ǽ){if(Ǭ){if(ǭ&&đ.BlockDefinition.TypeIdString.Contains(
+"Reactor")){đ.Enabled=true;}else if(Ǯ&&đ.BlockDefinition.TypeIdString.Contains("HydrogenEngine")){đ.Enabled=true;}else{đ.Enabled=
+false;}}else{đ.Enabled=false;}}if(Ǉ=="lowBat")Ǟ="Power fallback active: Low battery charge!";if(Ǉ=="overload")Ǟ=
+"Power fallback active: Overload!";}void Ē(){if(Ȋ.Count==0&&ǳ.Count==0)return;int ē=0;int.TryParse(Ā(Ǣ,true),out ē);bool ĕ=true;if(!simpleMode){if(Ǣ!=ǥ&&ē
+>=lightOffHour&&ē<lightOnHour){ĕ=false;}else if(Ǣ==ǥ&&ȋ>ȍ*nightTimePercentage){ĕ=false;}}else{if(ȋ>ȍ*(simpleThreshold%100)
+/100)ĕ=false;}foreach(var æ in Ȋ){æ.Enabled=ĕ;}foreach(var Y in ǳ){Y.Enabled=ĕ;}}void W(){if(events.Length==0){h(
+"No events for triggering specified!");return;}if(timers.Length==0){h("No timers for triggering specified!");return;}if(events.Length!=timers.Length){h(
+"Every event needs a timer block name!\nFound "+events.Length+" events and "+timers.Length+" timers.");return;}int Z=-1;string a="";int d;for(int e=0;e<=events.Length-
+1;e++){if(events[e]==ǈ){ǈ="";a=events[e];}else if(events[e]=="sunrise"&&Ǣ==0){a=events[e];}else if(events[e]=="sunset"&&Ǣ
+==ǧ){a=events[e];}else if(events[e]!=ǉ&&events[e].StartsWith("battery")&&System.Text.RegularExpressions.Regex.Match(events
+[e],@"\d+").Value==Math.Floor(ǁ/ǂ*100).ToString()){a=events[e];ǉ=a;}else if(int.TryParse(events[e],out d)==true&&Ǣ%d==0){
+a=d+" seconds";}else if(Ā(Ǣ)==events[e]){a=events[e];}if(a!=""){Z=e;break;}}if(Z>=0){var f=GridTerminalSystem.
+GetBlockWithName(timers[Z])as IMyTimerBlock;if(f!=null){f.Enabled=true;if(f.TriggerDelay==1){f.Trigger();}else{f.StartCountdown();}h(
+"External timer triggered! Reason: "+a);}}}void h(string j){ǌ.Add(j);Ǎ.Add(j);ė=ǌ.Last();}void k(){foreach(var m in ǹ){m.CustomData="";Ȼ(m,false);}foreach(
+var u in Ƽ){Ȼ(u,false);}foreach(var µ in ǃ){Ȼ(µ,false);}foreach(var v in ǅ){Ȼ(v,false);}}void w(){if(Storage.Length>0){var
+x=Storage.Split('\n');foreach(var y in x){var z=y.Split('=');if(z.Length!=2)continue;if(z[0]=="dayTimer"){Ǣ=z[1].Ŗ();}
+else if(z[0]=="dayLength"){ǥ=z[1].Ŗ();}else if(z[0]=="sunSet"){ǧ=z[1].Ŗ();}else if(z[0]=="outputLast"){Ȍ=z[1].ŕ();}else if(z
+[0]=="maxDetectedOutput"){ȍ=z[1].ŕ();}else if(z[0]=="maxDetectedWind"){Ȏ=z[1].ŕ();}else if(z[0]=="solarPanelsCount"){Ǻ=z[
+1].Ŗ();}else if(z[0]=="oxygenFarmsCount"){Ƙ=z[1].Ŗ();}else if(z[0]=="turbinesCount"){ƚ=z[1].Ŗ();}else if(z[0]=="action"){
+ǎ=z[1];}}if(ǎ=="paused")Ǐ=true;}}void Save(){ɺ();string x="";x+="dayTimer="+Ǣ+"\n";x+="dayLength="+ǥ+"\n";x+="sunSet="+ǧ+
+"\n";x+="outputLast="+Ȍ+"\n";x+="maxDetectedOutput="+ȍ+"\n";x+="maxDetectedWind="+Ȏ+"\n";x+="solarPanelsCount="+ǹ.Count+"\n"
+;x+="oxygenFarmsCount="+ǃ.Count+"\n";x+="turbinesCount="+ƙ.Count+"\n";x+="action="+ǎ;Storage=x;}StringBuilder ª(
+IMyTextSurface U,string º,double q,double X,string K=null,string B=null,bool C=false,bool D=false,string E=""){string F=q.ToString();
+string G=X.ToString();if(K!=null){F=K;}if(B!=null){G=B;}float H=U.FontSize;float I=0.61f;float J=1.01f;if(U.Font=="Monospace")
+{I=0.41f;J=0.81f;}float L=U.Ɔ();char V=' ';float M=U.ž(V);StringBuilder N=new StringBuilder(" "+q.Ń(X));N=U.Ƈ(V,U.ƕ(
+"9999.9%")-U.ƕ(N)).Append(N);StringBuilder O=new StringBuilder(F+" / "+G);StringBuilder P=new StringBuilder();StringBuilder Q=new
+StringBuilder();StringBuilder R;if(X==0){P.Append(E+º+" ");R=U.Ƈ(V,L-U.ƕ(P)-U.ƕ(F));P.Append(R).Append(F);return P.Append("\n");}
+double S=0;if(X>0)S=q/X>=1?1:q/X;if(D&&!C){if(H<I||(H<J&&L>512)){P.Append(T(U,L*0.25f,S,E)+" "+º+" ");R=U.Ƈ(V,L*0.75-U.ƕ(P)-U.
+ƕ(F+" /"));P.Append(R).Append(O);R=U.Ƈ(V,L-U.ƕ(P)-U.ƕ(N));P.Append(R);P.Append(N);}else{P.Append(T(U,L*0.3f,S,E)+" "+º+
+" ");R=U.Ƈ(V,L-U.ƕ(P)-U.ƕ(N));P.Append(R);P.Append(N);}}else{P.Append(E+º+" ");if(H<I||(H<J&&L>512)){R=U.Ƈ(V,L*0.5-U.ƕ(P)-U
+.ƕ(F+" /"));P.Append(R).Append(O);R=U.Ƈ(V,L-U.ƕ(P)-U.ƕ(N));P.Append(R).Append(N);if(!C){Q=T(U,L,S,E).Append("\n");}}else{
+R=U.Ƈ(V,L-U.ƕ(P)-U.ƕ(O));P.Append(R).Append(O);if(!C){Q=T(U,L-U.ƕ(N),S,E);Q.Append(N).Append("\n");}}}return P.Append(
+"\n").Append(Q);}StringBuilder T(IMyTextSurface U,float A,double S,string E){StringBuilder Î,Ï;char Ð='[';char Ñ=']';char Ò=
+'I';char Ó='∙';float Ô=U.ž(Ð);float Õ=U.ž(Ñ);float Ö=0;if(E!="")Ö=U.ƕ(E);float Ø=A-Ô-Õ-Ö;Î=U.Ƈ(Ò,Ø*S);Ï=U.Ƈ(Ó,Ø-U.ƕ(Î));
+return new StringBuilder().Append(E).Append(Ð).Append(Î).Append(Ï).Append(Ñ);}StringBuilder Ú=new StringBuilder(
+"No performance Information available!");Dictionary<string,int>ä=new Dictionary<string,int>();List<int>Û=new List<int>(new int[600]);List<double>Ü=new List<
+double>(new double[600]);double Ý,Þ,ß,à,á;int â,ã=0;void å(string Ù){ã=ã>=599?0:ã+1;â=Runtime.CurrentInstructionCount;if(â>Þ)Þ
+=â;Û[ã]=â;à=Û.Sum()/Û.Count;Ú.Clear();Ú.Append("Instructions: "+â+" / "+Runtime.MaxInstructionCount+"\n");Ú.Append(
+"Max. Instructions: "+Þ+" / "+Runtime.MaxInstructionCount+"\n");Ú.Append("Avg. Instructions: "+Math.Floor(à)+" / "+Runtime.
+MaxInstructionCount+"\n\n");Ý=Runtime.LastRunTimeMs;if(Ý>ß&&ä.ContainsKey(Ù))ß=Ý;Ü[ã]=Ý;á=Ü.Sum()/Ü.Count;Ú.Append("Last runtime: "+Math.
+Round(Ý,4)+" ms\n");Ú.Append("Max. runtime: "+Math.Round(ß,4)+" ms\n");Ú.Append("Avg. runtime: "+Math.Round(á,4)+" ms\n\n");Ú
+.Append("Instructions per Method:\n");ä[Ù]=â;foreach(var Í in ä.OrderByDescending(e=>e.Value)){Ú.Append("- "+Í.Key+": "+Í
+.Value+"\n");}Ú.Append("\n");}IMyCubeGrid À=null;HashSet<IMyCubeGrid>Á=new HashSet<IMyCubeGrid>();void Â(IMyCubeGrid Ã){Á
+.Add(Ã);List<IMyMotorStator>Ä=new List<IMyMotorStator>();List<IMyPistonBase>Å=new List<IMyPistonBase>();
+GridTerminalSystem.GetBlocksOfType<IMyMotorStator>(Ä,Æ=>Æ.IsAttached&&Æ.TopGrid==Ã&&!Á.Contains(Æ.CubeGrid));GridTerminalSystem.
+GetBlocksOfType<IMyPistonBase>(Å,Ç=>Ç.IsAttached&&Ç.TopGrid==Ã&&!Á.Contains(Ç.CubeGrid));if(Ä.Count==0&&Å.Count==0){À=Ã;return;}else{
+foreach(var È in Ä){Â(È.CubeGrid);}foreach(var É in Å){Â(É.CubeGrid);}}}HashSet<IMyCubeGrid>Ì=new HashSet<IMyCubeGrid>();void Ê
+(IMyCubeGrid Ã,bool Ë=false){if(Ë)Ì.Clear();Ì.Add(Ã);List<IMyMotorStator>Ä=new List<IMyMotorStator>();List<IMyPistonBase>
+Å=new List<IMyPistonBase>();GridTerminalSystem.GetBlocksOfType<IMyMotorStator>(Ä,Æ=>Æ.CubeGrid==Ã&&Æ.IsAttached&&!Ì.
+Contains(Æ.TopGrid));GridTerminalSystem.GetBlocksOfType<IMyPistonBase>(Å,Ç=>Ç.CubeGrid==Ã&&Ç.IsAttached&&!Ì.Contains(Ç.TopGrid))
+;foreach(var È in Ä){Ê(È.TopGrid);}foreach(var É in Å){Ê(É.TopGrid);}}bool Ĝ(double q=10){return Runtime.
+CurrentInstructionCount>q*1000;}List<IMyTerminalBlock>Ğ(string ĭ,string[]Ŭ=null,string ŭ="Debug",float Ů=0.6f,float ů=2f){string Ű="[IsyLCD]";
+var ű=new List<IMyTerminalBlock>();GridTerminalSystem.GetBlocksOfType<IMyTextSurfaceProvider>(ű,Ų=>Ų.IsSameConstructAs(Me)
+&&(Ų.CustomName.Contains(ĭ)||(Ų.CustomName.Contains(Ű)&&Ų.CustomData.Contains(ĭ))));var ų=ű.FindAll(Ų=>Ų.CustomName.
+Contains(ĭ));foreach(var U in ų){U.CustomName=U.CustomName.Replace(ĭ,"").Replace(" "+ĭ,"").TrimEnd(' ');bool ż=false;bool ŵ=
+false;int Ŷ=0;if(U is IMyTextSurface){if(!U.CustomName.Contains(Ű))ż=true;if(!U.CustomData.Contains(ĭ)){ŵ=true;U.CustomData=
+"@0 "+ĭ+(Ŭ!=null?"\n"+String.Join("\n",Ŭ):"");}}else if(U is IMyTextSurfaceProvider){if(!U.CustomName.Contains(Ű))ż=true;int
+ŷ=(U as IMyTextSurfaceProvider).SurfaceCount;for(int e=0;e<ŷ;e++){if(!U.CustomData.Contains("@"+e)){ŵ=true;Ŷ=e;U.
+CustomData+=(U.CustomData==""?"":"\n\n")+"@"+e+" "+ĭ+(Ŭ!=null?"\n"+String.Join("\n",Ŭ):"");break;}}}else{ű.Remove(U);}if(ż)U.
+CustomName+=" "+Ű;if(ŵ){var ó=(U as IMyTextSurfaceProvider).GetSurface(Ŷ);ó.Font=ŭ;ó.FontSize=Ů;ó.TextPadding=ů;ó.Alignment=
+TextAlignment.LEFT;ó.ContentType=ContentType.TEXT_AND_IMAGE;}}return ű;}
+}class Ÿ{public IMyMotorStator Ź{get;set;}public IMyCubeGrid ź{get;set;}public IMyCubeGrid Ż{get;set;}public List<
+IMySolarPanel>Ž{get;set;}=new List<IMySolarPanel>();public List<IMyOxygenFarm>Ŵ{get;set;}=new List<IMyOxygenFarm>();public bool ū{get
+;set;}=false;public bool Ţ{get;set;}=false;public double ř{get;set;}=0;public double Ś{get;set;}=0;public double ś{get;
+set;}=0;public double Ŝ{get;set;}=0;public double ŝ{get;set;}=0;public double Ş{get;set;}=0;public double ş{get;set;}=0;
+public int Š{get;set;}=1;public bool š{get;set;}=false;public int ţ{get;set;}=0;public bool Ū{get;set;}=true;public bool Ť{get
+;set;}=true;public int ť{get;set;}=0;public bool Ŧ{get;set;}=false;public bool ŧ{get;set;}=false;public double Ũ{get;set;
+}=0;public Ÿ(IMyMotorStator È){Ź=È;ź=È.CubeGrid;Ż=È.TopGrid;}}public static partial class Ĭ{public static float ũ(this
+float Ł,float ń){return ń==0?1:Ł/ń;}public static double ũ(this double Ł,double ń){return ń==0?1:Ł/ń;}}public static partial
+class Ĭ{private static Dictionary<char,float>Ǝ=new Dictionary<char,float>();public static void Ə(string Ɛ,float Ƒ){foreach(
+char ƒ in Ɛ){Ǝ[ƒ]=Ƒ;}}public static void Ɠ(){if(Ǝ.Count>0)return;Ə(
+"3FKTabdeghknopqsuy£µÝàáâãäåèéêëðñòóôõöøùúûüýþÿāăąďđēĕėęěĝğġģĥħĶķńņňŉōŏőśŝşšŢŤŦũūŭůűųŶŷŸșȚЎЗКЛбдекруцяёђћўџ",18);Ə("ABDNOQRSÀÁÂÃÄÅÐÑÒÓÔÕÖØĂĄĎĐŃŅŇŌŎŐŔŖŘŚŜŞŠȘЅЊЖф□",22);Ə("#0245689CXZ¤¥ÇßĆĈĊČŹŻŽƒЁЌАБВДИЙПРСТУХЬ€",20);Ə(
+"￥$&GHPUVY§ÙÚÛÜÞĀĜĞĠĢĤĦŨŪŬŮŰŲОФЦЪЯжы†‡",21);Ə("！ !I`ijl ¡¨¯´¸ÌÍÎÏìíîïĨĩĪīĮįİıĵĺļľłˆˇ˘˙˚˛˜˝ІЇії‹›∙",9);Ə("？7?Jcz¢¿çćĉċčĴźżžЃЈЧавийнопсъьѓѕќ",17);Ə(
+"（）：《》，。、；【】(),.1:;[]ft{}·ţťŧț",10);Ə("+<=>E^~¬±¶ÈÉÊË×÷ĒĔĖĘĚЄЏЕНЭ−",19);Ə("L_vx«»ĹĻĽĿŁГгзлхчҐ–•",16);Ə("\"-rª­ºŀŕŗř",11);Ə("WÆŒŴ—…‰",32);Ə("'|¦ˉ‘’‚",7)
+;Ə("@©®мшњ",26);Ə("mw¼ŵЮщ",28);Ə("/ĳтэє",15);Ə("\\°“”„",13);Ə("*²³¹",12);Ə("¾æœЉ",29);Ə("%ĲЫ",25);Ə("MМШ",27);Ə("½Щ",30);
+Ə("ю",24);Ə("ј",8);Ə("љ",23);Ə("ґ",14);Ə("™",31);}public static Vector2 Ɣ(this IMyTextSurface ó,StringBuilder j){Ɠ();
+Vector2 A=new Vector2();if(ó.Font=="Monospace"){float H=ó.FontSize;A.X=(float)(j.Length*19.4*H);A.Y=(float)(28.8*H);return A;}
+else{float H=(float)(ó.FontSize*0.779);foreach(char ƒ in j.ToString()){try{A.X+=Ǝ[ƒ]*H;}catch{}}A.Y=(float)(28.8*ó.FontSize)
+;return A;}}public static float ƕ(this IMyTextSurface U,StringBuilder j){Vector2 ƅ=U.Ɣ(j);return ƅ.X;}public static float
+ƕ(this IMyTextSurface U,string j){Vector2 ƅ=U.Ɣ(new StringBuilder(j));return ƅ.X;}public static float ž(this
+IMyTextSurface U,char ſ){float ƀ=ƕ(U,new string(ſ,1));return ƀ;}public static int Ɓ(this IMyTextSurface U){Vector2 Ƃ=U.SurfaceSize;
+float ƃ=U.TextureSize.Y;if(Ƃ.X<512||ƃ!=Ƃ.Y)Ƃ.Y*=512/ƃ;float Ƅ=Ƃ.Y*(100-U.TextPadding*2)/100;Vector2 ƅ=U.Ɣ(new StringBuilder(
+"T"));return(int)(Ƅ/ƅ.Y);}public static float Ɔ(this IMyTextSurface U){Vector2 Ƃ=U.SurfaceSize;float ƃ=U.TextureSize.Y;if(Ƃ
+.X<512||ƃ!=Ƃ.Y)Ƃ.X*=512/ƃ;return Ƃ.X*(100-U.TextPadding*2)/100;}public static StringBuilder Ƈ(this IMyTextSurface U,char
+ƈ,double Ɖ){int Ɗ=(int)(Ɖ/ž(U,ƈ));if(Ɗ<0)Ɗ=0;return new StringBuilder().Append(ƈ,Ɗ);}private static DateTime Ƌ=DateTime.
+Now;private static Dictionary<int,List<int>>ƌ=new Dictionary<int,List<int>>();public static StringBuilder ƍ(this
+IMyTextSurface U,StringBuilder j,int Ř=3,bool ì=true,int į=0){int İ=U.GetHashCode();if(!ƌ.ContainsKey(İ)){ƌ[İ]=new List<int>{1,3,Ř,0};
+}int ı=ƌ[İ][0];int Ĳ=ƌ[İ][1];int ĳ=ƌ[İ][2];int Ĵ=ƌ[İ][3];var ĵ=j.ToString().TrimEnd('\n').Split('\n');List<string>Ķ=new
+List<string>();if(į==0)į=U.Ɓ();float L=U.Ɔ();StringBuilder E,ľ=new StringBuilder();for(int e=0;e<ĵ.Length;e++){if(e<Ř||e<ĳ||
+Ķ.Count-ĳ>į||U.ƕ(ĵ[e])<=L){Ķ.Add(ĵ[e]);}else{try{ľ.Clear();float ĸ,Ĺ;var ĺ=ĵ[e].Split(' ');string Ļ=System.Text.
+RegularExpressions.Regex.Match(ĵ[e],@"\d+(\.|\:)\ ").Value;E=U.Ƈ(' ',U.ƕ(Ļ));foreach(var ļ in ĺ){ĸ=U.ƕ(ľ);Ĺ=U.ƕ(ļ);if(ĸ+Ĺ>L){Ķ.Add(ľ.
+ToString());ľ=new StringBuilder(E+ļ+" ");}else{ľ.Append(ļ+" ");}}Ķ.Add(ľ.ToString());}catch{Ķ.Add(ĵ[e]);}}}if(ì){if(Ķ.Count>į){
+if(DateTime.Now.Second!=Ĵ){Ĵ=DateTime.Now.Second;if(Ĳ>0)Ĳ--;if(Ĳ<=0)ĳ+=ı;if(ĳ+į-Ř>=Ķ.Count&&Ĳ<=0){ı=-1;Ĳ=3;}if(ĳ<=Ř&&Ĳ<=0)
+{ı=1;Ĳ=3;}}}else{ĳ=Ř;ı=1;Ĳ=3;}ƌ[İ][0]=ı;ƌ[İ][1]=Ĳ;ƌ[İ][2]=ĳ;ƌ[İ][3]=Ĵ;}else{ĳ=Ř;}StringBuilder Ľ=new StringBuilder();for(
+var y=0;y<Ř;y++){Ľ.Append(Ķ[y]+"\n");}try{for(var y=ĳ;y<Ķ.Count;y++){Ľ.Append(Ķ[y]+"\n");}}catch{}return Ľ;}public static
+Dictionary<IMyTextSurface,string>Ŀ(this IMyTerminalBlock ķ,string ĭ,Dictionary<string,string>Ĩ=null){var Ġ=new Dictionary<
+IMyTextSurface,string>();if(ķ is IMyTextSurface){Ġ[ķ as IMyTextSurface]=ķ.CustomData;}else if(ķ is IMyTextSurfaceProvider){var ġ=
+System.Text.RegularExpressions.Regex.Matches(ķ.CustomData,@"@(\d).*("+ĭ+@")");int Ģ=(ķ as IMyTextSurfaceProvider).SurfaceCount
+;foreach(System.Text.RegularExpressions.Match ģ in ġ){int Ĥ=-1;if(int.TryParse(ģ.Groups[1].Value,out Ĥ)){if(Ĥ>=Ģ)continue
+;string ĥ=ķ.CustomData;int Ħ=ĥ.IndexOf("@"+Ĥ);int ħ=ĥ.IndexOf("@",Ħ+1)-Ħ;string x=ħ<=0?ĥ.Substring(Ħ):ĥ.Substring(Ħ,ħ);Ġ[
+(ķ as IMyTextSurfaceProvider).GetSurface(Ĥ)]=x;}}}return Ġ;}public static bool ĩ(this string x,string Ī){var ĥ=x.Replace(
+" ","").Split('\n');foreach(var y in ĥ){if(y.StartsWith(Ī+"=")){try{return Convert.ToBoolean(y.Replace(Ī+"=",""));}catch{
+return true;}}}return true;}public static string ī(this string x,string Ī){var ĥ=x.Replace(" ","").Split('\n');foreach(var y
+in ĥ){if(y.StartsWith(Ī+"=")){return y.Replace(Ī+"=","");}}return"";}}public static partial class Ĭ{public static bool ğ(
+this double q,double ŀ,double G,bool ŋ=false,bool Ō=false){bool ō=q>=ŀ;bool Ŏ=q<=G;if(Ō)ō=q>ŀ;if(ŋ)Ŏ=q<G;return ō&&Ŏ;}}
+public static partial class Ĭ{public static string ŏ(this char Ő,int ő){if(ő<=0){return"";}return new string(Ő,ő);}}public
+static partial class Ĭ{public static double Œ(this string œ){double Ŕ;double.TryParse(œ,out Ŕ);return Ŕ;}public static float ŕ
+(this string œ){float Ŕ;float.TryParse(œ,out Ŕ);return Ŕ;}public static int Ŗ(this string œ){int Ŕ;int.TryParse(œ,out Ŕ);
+return Ŕ;}public static bool ŗ(this string œ){bool Ŕ;bool.TryParse(œ,out Ŕ);return Ŕ;}}public static partial class Ĭ{public
+static string Ń(this double Ł,double ń){double ł=Math.Round(Ł/ń*100,1);if(ń==0){return"0%";}else{return ł+"%";}}public static
+string Ń(this float Ł,float ń){double ł=Math.Round(Ł/ń*100,1);if(ń==0){return"0%";}else{return ł+"%";}}}public static partial
+class Ĭ{public static string Ņ(this float q,bool ņ=false){string Ň="MW";string Ŋ=q<0?"-":"";q=Math.Abs(q);if(q<1){q*=1000;Ň=
+"kW";}else if(q>=1000&&q<1000000){q/=1000;Ň="GW";}else if(q>=1000000&&q<1000000000){q/=1000000;Ň="TW";}else if(q>=1000000000
+){q/=1000000000;Ň="PW";}if(ņ)Ň+="h";return Ŋ+Math.Round(q,1)+" "+Ň;}public static string Ņ(this double q,bool ņ=false){
+float ň=(float)q;return ň.Ņ(ņ);}}public static partial class Ĭ{public static string ŉ(this float q){string Ň="L";if(q>=1000&&
+q<1000000){q/=1000;Ň="KL";}else if(q>=1000000&&q<1000000000){q/=1000000;Ň="ML";}else if(q>=1000000000&&q<1000000000000){q
+/=1000000000;Ň="BL";}else if(q>=1000000000000){q/=1000000000000;Ň="TL";}return Math.Round(q,1)+" "+Ň;}public static string
+ŉ(this double q){float ň=(float)q;return ň.ŉ();}

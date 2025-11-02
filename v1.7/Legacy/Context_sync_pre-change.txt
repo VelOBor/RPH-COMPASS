@@ -1,0 +1,345 @@
+============================================================
+
+FINDINGS (DEEP DIVE)
+============================================================
+
+Sources I used:
+
+Roadmap: RPH-COMPASS_Roadmap_v1.7.txt 
+
+RPH-COMPASS_Roadmap_v1.7
+
+Corkboard: RPH-COMPASS_Corkboard_v1.7.txt 
+
+RPH-COMPASS_Corkboard_v1.7
+
+TechNotes: RPH-COMPASS_TechNotes_v1.7.txt 
+
+RPH-COMPASS_TechNotes_v1.7
+
+[v] Test Status (still labeled v1.53): RPH-COMPASS_Test_Status_v1.7.txt 
+
+RPH-COMPASS_Test_Status_v1.7
+
+Version History: RPH-COMPASS_Version_History_v1.7.txt 
+
+RPH-COMPASS_Version_History_v1.7
+
+Actual codebase: RPH-COMPASS_v1.7.3 Stable.cs 
+
+RPH-COMPASS_v1.7.3 Stable
+
+What’s out of sync:
+
+A. Roadmap vs Code
+
+[v] Roadmap v1.7 says Phase 3 “Display system” is [v] and complete. That’s fine for the original 3e. But in code we now have TWO NEW PER-LCD KEYS:
+
+rph_display_autosize
+
+rph_group_separators
+and those are actually implemented in code. These are Phase 3e add-ons, so the roadmap should mention them explicitly under Phase 3.
+
+[v] Phase 4 in roadmap still lists “Configurable update interval (pending)” and “Velocity display (pending)”. That matches actual code: we do not do velocity display yet (we only store a Velocity field in TrackedPart, but we do not output it). So this is correct.
+
+[v] Units & precision toggle is properly pushed to corkboard as [p], so roadmap should NOT list it as [r] if the corkboard says [p]. Right now: roadmap = [r], corkboard = [p]. We need to make them agree. Easiest: leave it in corkboard as [p], remove/mute it from roadmap Phase 4.
+
+[v] B. TechNotes vs Code
+
+TechNotes currently list only:
+
+rph_display_mode
+
+rph_display_groups
+
+rph_sort
+
+rph_header
+They do NOT list:
+
+rph_display_autosize
+
+rph_group_separators
+which are now in code and in PB sample Custom Data. TechNotes must be updated.
+
+C. Test Status
+
+[v] Test Status doc still says “RPH Tracker – Test Status v1.53” and refers to v1.53 flows (e.g. echo spam fixed in v1.53a, group-cache quirk). FIXED ISSUES REMOVED FROM TEST STATUS
+	But we have now:
+
+v1.7 autosize trials (you just did them)
+
+v1.7 LCD grouped compact confirmed
+
+v1.7 missing-headers heads-up confirmed
+
+v1.7 echo clipping in PB terminal (KNOWN ISSUE, not a fail)
+So Test Status must be bumped to v1.7.3 and include these new results.
+
+[v] D. Corkboard
+
+Corkboard still has “FONT AUTOSIZE / AUTOSCROLL” as [p]. We actually implemented autosize in v1.7.3, but only the simple heuristic (no autoscroll, no per-font ladders). So:
+
+[v] Move “FONT AUTOSIZE” part to roadmap as [v]/[+] (partial)
+
+[v] Keep “AUTOSCROLL” / “per-font ladders” on corkboard as [p] (greenlit and moved to roadmap)
+
+[v] Keep “UNITS & PRECISION” on corkboard as [p]
+This will keep corkboard clean and make sure we don’t re-implement stuff already done. (greenlit and moved to roadmap)
+
+[v] E. Version History
+
+Version History says v1.7 = “Documentation alignment”. That was true when you first wrote it, but we actually did code work in 1.7:
+
+[v] per-LCD autosize
+
+[v] per-LCD separators
+
+[v] improved refresh echo
+
+[v] ample headers in PB CD updated
+
+[v] So we should add v1.7.1 / v1.7.2 / v1.7.3 lines to version history.
+
+============================================================
+2. UPDATED DOCS (TEXT-ONLY, SAME STYLE)
+
+I will give you deltas you can paste into each file.
+
+2.1 RPH-COMPASS_Roadmap_v1.7.txt (update)
+
+Keep your header and legend EXACTLY as you have it. Replace ONLY Phase 3 and Phase 4 sections with this:
+
+PHASE 3 - DISPLAY SYSTEM
+
+[v] Per-LCD configuration via [RPH:Display]
+[v] Added key: rph_display_mode = full | compact | debug
+[v] Compact Mode - condensed line display grouped per subgroup
+[v] Debug Mode - engineering readout for tagged LCDs only
+[v] Group-based filtering (rph_display_groups)
+[v] Display header key (rph_header)
+[v] ASCII-only enforcement confirmed
+[v] LCD display auto-refresh stability verified
+[v] Added key: rph_display_autosize = true | false (v1.7.3)
+[v] Added key: rph_group_separators = true | false (v1.7.3, active when sorted by group)
+[+] Echo output from refresh/rebuild_cd to be consolidated to single-block echo to prevent PB terminal clipping (pushed to v1.8)
+
+PHASE 4 - EXTENDED FEATURE LAYER
+
+[x] Cross-LCD coordination (linked summaries)
+[x] Multi-PB handshake groundwork
+[x] Enhanced calibration controls (per-part command)
+[x] Persistent state sync
+[p] Velocity display (pending)
+[p] Configurable update interval (pending)
+[r] Units & precision toggle (moved to Corkboard for later consideration)
+
+This matches actual code behavior and leaves the v1.8 items in Phase 4.
+
+2.2 RPH-COMPASS_TechNotes_v1.7.txt (update)
+
+[v] Append to CUSTOM DATA KEYS section:
+
+[RPH:Display] (continued)
+rph_display_autosize = true | false
+- When true, script adjusts LCD FontSize based on longest visible line
+- Tuned for compact/debug modes in v1.7.3
+rph_group_separators = true | false
+- When true AND rph_sort = group, display inserts blank line between subgroups in FULL mode
+- Has no effect in compact mode (already grouped per line)
+
+Add to BEHAVIOR NOTES:
+
+LCD autosize currently uses longest-line heuristic (v1.7.3)
+
+PB terminal echo may clip top lines when many Echo() calls are made in one run; consolidation planned in v1.8
+
+Monospace and non-monospace fonts render differently; per-font ladders deferred to v1.8
+
+This makes TechNotes reflect actual behavior.
+
+2.3 RPH-COMPASS_Corkboard_v1.7.txt (update)
+
+[v] Current file already has the right legend and “ACTIVE CONCEPTS”. We just need to adjust the autosize entry so it no longer sounds unimplemented.
+
+[v] Replace the current “FONT AUTOSIZE / AUTOSCROLL” block with:
+
+[p] FONT AUTOSCROLL / PER-FONT LADDER
+Autosize for LCDs implemented in v1.7.3
+Remaining work:
+- separate ladder for Debug vs Monospace
+- optional forced monospace for full/compact
+- autoscroll for overlong outputs
+
+Leave “UNITS & PRECISION TOGGLE” as-is.
+You can also move “Velocity display” here if you prefer to keep Phase 4 slim.
+
+2.4 RPH-COMPASS_Test_Status_v1.7.txt (renumber to v1.7.3 and append)
+
+Keep all the v1.53 sections (they’re still correct) but change the header line to:
+
+RPH Tracker – Test Status v1.7.3
+
+Then append at the bottom:
+
+v1.7.3 Display System Tests
+
+LCD compact mode (grouped per line): PASS
+
+LCD full mode with rph_group_separators=true and rph_sort=group: PASS
+
+LCD full mode with rph_group_separators=true and rph_sort=default: N/A (by design, grouping requires group sort)
+
+Per-LCD autosize (rph_display_autosize=true): PASS (tuned to longest-line heuristic)
+
+Autosize expansion for short lines: PASS (ladder tuned for FontSize ~1.2 baseline)
+
+PB Echo head-up for missing headers: PASS (note: PB terminal clips top lines if too many Echo() calls issued in same run)
+
+Rebuild_cd repopulates LCD CD with new keys (autosize, separators): PASS (v1.7.1 hotfix)
+
+PARK coexistence after v1.7 changes: PASS (no writes to [PARK:*])
+
+Known Issues (v1.7.3)
+
+PB terminal display may show only last line of multi-line echo
+
+Autosize can shrink too aggressively for extremely long display names; clamp to be revisited in v1.8
+
+Monospace vs Debug font width differences not yet normalized
+
+2.5 RPH-COMPASS_Version_History_v1.7.txt (append)
+
+Append this to the bottom:
+
+v1.7.1 - LCD Header Update
+
+Ensured newly created LCDs receive full [RPH:Display] block
+
+Added rph_display_autosize and rph_group_separators to auto-populated CD
+
+PARK-safe preserved
+
+v1.7.2 - Display Grouping Refinement
+
+Adjusted FULL renderer to honor rph_group_separators when sorting by group
+
+Clarified behavior of compact renderer (one group per line)
+
+v1.7.3 - Autosize Calibration
+
+Implemented longest-line autosize heuristic for compact and debug modes
+
+Tuned font scaling for LCDs where FontSize 1.2 ~= 45 visible characters
+
+Documented PB Echo clipping behavior for multi-line refresh
+
+Declared v1.7.3 as stable baseline for v1.8 work
+
+============================================================
+3. CONTEXT PRESERVATION FILE (SEPARATE .TXT)
+
+Here is the “context capsule” you asked for — single ASCII file, ready to drop into a fresh chat.
+
+-----------------BEGIN CONTEXT TXT-----------------
+PROJECT: RPH-COMPASS
+Rotor, Piston, Hinge – Component Orientation, Motion And Positional Assessment Status System
+Motto: "Monitoring position. Assessing motion. Maintaining awareness. Precision is our direction."
+Tagline: "Stability Through Awareness."
+
+STRICT CODE ADHERENCE PRINCIPLES
+
+INI-style Custom Data only (Space Engineers compatible)
+
+Never write or modify [PARK:*] sections
+
+ASCII-only for all script output and docs
+
+No writes on "refresh" (read-only)
+
+Writes only on "rebuild_cd" and deliberate calibration
+
+Per-LCD configuration must use [RPH:Display]
+
+CURRENT STABLE SCRIPT
+
+RPH-COMPASS_v1.7.3 Stable.cs
+
+Features:
+
+Per-LCD display modes: full | compact | debug
+
+Per-LCD display groups: rph_display_groups = ...
+
+Sorting: default | group | name | type
+
+Display header: rph_header = ...
+
+NEW (v1.7.3): rph_display_autosize = true | false
+
+NEW (v1.7.3): rph_group_separators = true | false (effective in FULL mode when rph_sort=group)
+
+Heads-up echo on refresh for missing [RPH:Tracking] headers (shows up to 5 names)
+
+Sample Custom Data for PB now includes updated LCD keys
+
+Global calibrate_all respects rph_is_calibrated flag
+
+DOCUMENT SET (v1.7.3)
+
+RPH-COMPASS_Roadmap_v1.7.txt
+
+Phase 1–3: [v]
+
+Phase 4: partially [x], some [p]
+
+Display system explicitly lists autosize + group separators (v1.7.3)
+
+RPH-COMPASS_TechNotes_v1.7.txt
+
+Commands: refresh, rebuild_cd, cleanup, calibrate_all
+
+Keys: [RPH:Tracking], [RPH:Display]
+
+MUST include rph_display_autosize and rph_group_separators
+
+RPH-COMPASS_Corkboard_v1.7.txt
+
+Keep: UNITS & PRECISION TOGGLE [p]
+
+Keep: FONT AUTOSCROLL / PER-FONT LADDER [p]
+
+Archived: alphabetical subgroup display, debug overlay, persistent calibration, configurable update speed
+
+RPH-COMPASS_Test_Status_v1.7.txt
+
+Bump to v1.7.3
+
+Record: autosize OK, group separators OK (when sorted by group), PB echo clipping noted
+
+RPH-COMPASS_Version_History_v1.7.txt
+
+Append v1.7.1, v1.7.2, v1.7.3 as hotfixes/polish on display system
+
+KNOWN ISSUES TO CARRY FORWARD (FOR v1.8)
+
+PB terminal sometimes shows only last Echo lines if too many Echo() calls in one run; solution: consolidate echo
+
+Autosize can overshrink for very long single names; solution: add per-font ladders + min font clamp
+
+Monospace vs Debug font widths differ; solution: detect font and apply separate ladders
+
+Velocity display still pending (Phase 4)
+
+Per-part calibration command (not global) still pending (Phase 4)
+
+NEXT PLANNED PHASE (v1.8)
+
+Echo consolidation (single-block echo)
+
+Per-font autosize ladders (debug vs monospace)
+
+Optional forced monospace for compact
+
+Begin extended feature layer (cross-LCD coordination, velocity display if feasible)
+------------------END CONTEXT TXT------------------

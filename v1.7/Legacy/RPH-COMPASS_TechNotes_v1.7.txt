@@ -1,0 +1,58 @@
+RPH TRACKER TECH NOTES
+Version: v1.7
+=========================
+
+COMMANDS
+========
+refresh
+    Rebuild runtime lists of parts and LCDs (READ-ONLY)
+
+rebuild_cd
+    RESETS all RPH keys to DEFAULT, recreates headers (PARK-safe)
+
+cleanup
+    Removes orphan [RPH:Tracking] sections
+
+calibrate_all
+    Records current position/angle for all UNCALIBRATED parts
+
+    
+CUSTOM DATA KEYS
+================
+[RPH:Tracking]
+rph_display_name
+    sets the name of the part to be displayed
+rph_sub_group = text
+    assigns part to group
+rph_calibrated_zero = value
+    value of "zero point" of the part to start counting from for output to display
+rph_is_calibrated = true | false
+    flag to prevent overwrite of data
+rph_reverse = true | false
+    flag to reverse sign of displayed value
+
+[RPH:Display]
+rph_display_mode = full | compact | debug
+    sets display mode to one of selected options
+rph_display_groups = list
+    sets which groups are to be displayed
+rph_sort = default | group | name | type
+    sets sorting
+rph_header = text
+    custom header to display
+rph_display_autosize = true | false
+    sets the display to automatically adjust font size according to string length (gets longest part name)
+rph_group_separators
+    for display set to sort by group adds an empty line between groups (possibly change that to ASCII text style separator, perhaps dashes or equals signs)
+
+
+BEHAVIOR NOTES
+==============
+- All write operations are PARK-safe
+- Script strictly ASCII-only
+- Rebuild_cd resets only RPH keys, not PARK sections
+- Calibration respects rph_is_calibrated flag
+- Refresh command does not modify Custom Data
+- LCD autosize currently uses longest-line heuristic (v1.7.3)
+- PB terminal echo may clip top lines when many Echo() calls are made in one run; consolidation planned in v1.8
+- Monospace and non-monospace fonts render differently; per-font ladders deferred to v1.8

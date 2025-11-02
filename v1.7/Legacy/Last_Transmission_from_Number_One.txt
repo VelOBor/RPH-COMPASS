@@ -1,0 +1,140 @@
+Excellent report, Captain — that’s a thorough, methodical phase wrap-up, and your observations align perfectly with what I’d expect from live PB behavior. Let’s break this down with precision and lock in the state of RPH-COMPASS v1.7 before we prep the handover to v1.8.
+
+🚀 RPH-COMPASS v1.7 Final Engineering Review
+✅ Phase 3 – Autosize (confirmed, tuned)
+
+
+Functional with new ladder.
+
+
+Responsive and stable.
+
+
+Minor caveat: over-aggressive shrink (0.2) on very long names — acceptable for now.
+
+
+Note: We can add a Math.Max(newSize, 0.5f) clamp in v1.8 polish pass.
+
+
+
+
+
+⚙️ Phase 4 – Refresh Echo & Header Warning
+Symptoms observed:
+
+
+Heads-up appears as expected when RPH headers missing ✅
+
+
+Rebuild produces no visible echo ✖️
+
+
+Refresh shows only final line, and partial vertical clipping at top ✖️
+
+
+Diagnosis:
+That’s a classic terminal scroll offset artifact in SE’s PB terminal.
+
+
+Echo() doesn’t scroll automatically when the buffer fills.
+
+
+If multiple Echo() calls happen in a single tick, the PB sometimes renders the bottom line only.
+
+
+Fix plan:
+
+
+In v1.8, consolidate multi-line Echo output into one call:
+Echo(log.ToString());
+
+where log is a StringBuilder that accumulates all text.
+
+
+This will restore full, readable output and prevent scroll truncation.
+
+
+No functional impact — safe to defer to next version.
+
+🔬 Phase 5 – Debug Mode
+
+
+Correct display and calibration info ✅
+
+
+Font shrink triggered on long names — expected per current ladder.
+
+
+Acceptable until we implement per-font ladder or per-LCD font clamping.
+
+
+
+
+
+🔁 Phase 6 – Calibration Retest
+
+
+Fully confirmed functional ✅
+
+
+Flag logic stable; no accidental overwrites ✅
+
+
+Global calibration working as designed ✅
+
+
+
+🔤 Phase 7 – Font Behavior / Monospace Divergence
+Excellent callout, Captain. The differences are due to font metrics variance:
+
+
+“Debug” font is variable-width, less predictable.
+
+
+“Monospace” gives precise per-character width, perfect for compact tables.
+
+
+Recommendation for v1.8:
+
+
+On LCD init, detect Surface.Font.
+
+
+If it’s neither "Debug" nor "Monospace", automatically set it to "Monospace".
+
+
+Maintain separate autosize ladders for both fonts.
+
+
+This keeps user freedom while standardizing behavior.
+
+🧭 Summary — RPH-COMPASS v1.7 Status
+PhaseFeatureResultAction1–2Refresh logic & rebuild safety✅ Stablenone3Autosize heuristic✅ Tunedfine-tune lower clamp later4Echo heads-up & terminal output⚠️ Minor scroll issuedefer fix5Debug display✅ Stablerefine ladder later6Calibration flag✅ Stablenone7Font detection & behavior⚠️ Needs refinementmove to 1.8
+
+📘 Recommended Record Notes
+In the TechNotes or Version History for v1.7, we’ll record:
+• Added dynamic autosize (rph_display_autosize)
+• Added group separators (rph_group_separators)
+• Fixed compact view grouping
+• Improved echo heads-up consistency
+• Introduced font-size ladder heuristic
+• Known issue: PB terminal scroll clipping with multi-line Echo
+• Known issue: Autosize overreacts on extreme name length (clamp planned)
+• Known issue: Font metric variance (Monospace vs Debug)
+
+
+🧭 Next Step Proposal
+Proceed to:
+
+
+Tag this as RPH-COMPASS v1.7.3 Stable.
+
+
+Generate the Context Preservation Kit v1.7 (roadmap, technotes, test status, version history, code).
+
+
+Begin v1.8 planning (Echo refactor, font ladder separation, debug-LCD enrichment, etc.).
+
+
+
+Shall I prepare the v1.7 context kit now, Captain — all synchronized and ready for export before we chart the v1.8 course?
