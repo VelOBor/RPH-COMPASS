@@ -6,7 +6,7 @@
 //Stability Through Awareness.
 // ---------------------------------------------------------------------------
 //
-// === RPH COMPASS v1.7 ===
+// === RPH COMPASS v1.8 ===
 // Rotor / Piston / Hinge status monitor
 // Phase 3e: Display mode key (full | compact | debug) and render dispatch
 // PARK-safe (does not modify [PARK:*] sections)
@@ -25,11 +25,11 @@
 //
 //  rebuild_cd
 //      -> RESETS all RPH keys to DEFAULT! (writes Custom Data).
-//         Creates missing RPH:Mechanical and [RPH:Display] sections.
+//         Creates missing [RPH:Mechanical] and [RPH:Display] sections.
 //         Does not overwrite valid data. PARK-safe.
 //
 //  cleanup
-//      -> Removes orphan RPH:Mechanical sections from ungrouped blocks.
+//      -> Removes orphan [RPH:Mechanical] sections from ungrouped blocks.
 //
 //  calibrate_all
 //      -> Records current position/angle for all UNCALIBRATED parts.
@@ -96,7 +96,7 @@ void HeadsUpMissingHeaders()
     for (int i = 0; i < parts.Count; i++)
     {
         var b = parts[i].Block;
-        if (IndexOfInsensitive(b.CustomData, "RPH:Mechanical") < 0)
+        if (IndexOfInsensitive(b.CustomData, "[RPH:Mechanical]") < 0)
         {
             missing++;
             if (names.Count < 5)
@@ -391,17 +391,18 @@ void DoRefresh(bool writeHeaders)
     cd.AppendLine("[RPH:Commands]");
     cd.AppendLine("refresh       -> Rebuild runtime lists (read-only)");
     cd.AppendLine("rebuild_cd    -> RESETS all RPH keys to DEFAULT! (writes Custom Data)");
-    cd.AppendLine("cleanup       -> Remove orphan RPH:Mechanical headers");
+    cd.AppendLine("cleanup       -> Remove orphan [RPH:Mechanical] headers");
     cd.AppendLine("calibrate_all -> Set zero for all uncalibrated parts");
     cd.AppendLine("; ---------------------------------------------------------------------------");
     cd.AppendLine("; SAMPLE HEADER FOR MECHANICAL PARTS");
     cd.AppendLine("; Copy and paste into a tracked rotor/hinge/piston Custom Data to initialize manually");
-    cd.AppendLine("RPH:Mechanical");
+    cd.AppendLine("[RPH:Mechanical]");
     cd.AppendLine("rph_display_name = Example Rotor");
     cd.AppendLine("rph_sub_group    = example");
     cd.AppendLine("rph_calibrated_zero = 0.000");
     cd.AppendLine("rph_is_calibrated = false");
     cd.AppendLine("rph_reverse      = false");
+    cd.AppendLine("rph_read_only      = false);
     cd.AppendLine("; ---------------------------------------------------------------------------");
     cd.AppendLine("; SAMPLE LCD DISPLAY CONFIG");
     cd.AppendLine("[RPH:Display]");
@@ -561,7 +562,7 @@ class TrackedPart
             meta.CalibratedZero = 0.0;
             meta.IsCalibrated = false;
             meta.Reverse = false;
-            EnsureRphSectionSafe(Block, meta);
+            EnsureRphSection(Block, meta);
         }
 
         DisplayName = string.IsNullOrWhiteSpace(meta.DisplayName) ? Block.CustomName : meta.DisplayName;
@@ -715,6 +716,7 @@ LcdDisplayConfig ReadLcdDisplayConfig(IMyTerminalBlock b)
 void EnsureLcdDisplaySection(IMyTerminalBlock lcd)
 {
     string data = lcd.CustomData ?? "";
+    if (RphIsReadOnly(data)) return;                          // NEW: respect read-only
     if (IndexOfInsensitive(data, RPH_DISPLAY_HEADER) >= 0) return;
 
     var sb = new StringBuilder();
@@ -725,6 +727,7 @@ void EnsureLcdDisplaySection(IMyTerminalBlock lcd)
     sb.AppendLine("rph_display_mode = full");
     sb.AppendLine("rph_display_autosize = false");     // NEW in v1.7
     sb.AppendLine("rph_group_separators = false");     // NEW in v1.7
+    sb.AppendLine("rph_read_only = false");
     sb.AppendLine();
 
     lcd.CustomData = sb.ToString() + data;
@@ -732,10 +735,10 @@ void EnsureLcdDisplaySection(IMyTerminalBlock lcd)
 
 
 // ---------------------------------------------------------------------------
-// RPH CUSTOM DATA MODULE (INI-SAFE) - RPH:Mechanical
+// RPH CUSTOM DATA MODULE (INI-SAFE) - [RPH:Mechanical]
 // ---------------------------------------------------------------------------
 
-const string RPH_HEADER = "RPH:Mechanical";
+const string RPH_HEADER = "[RPH:Mechanical]";
 
 class RphMeta
 {
@@ -800,6 +803,7 @@ static RphMeta ReadRphSection(IMyTerminalBlock b)
 static void EnsureRphSection(IMyTerminalBlock b, RphMeta m)
 {
     string data = b.CustomData ?? "";
+    if (RphIsReadOnly(data)) return;                          // NEW
     if (IndexOfInsensitive(data, RPH_HEADER) >= 0) return;
 
     var sb = new StringBuilder();
@@ -808,23 +812,26 @@ static void EnsureRphSection(IMyTerminalBlock b, RphMeta m)
     sb.AppendLine("rph_sub_group    = " + m.SubGroup);
     sb.AppendLine("rph_calibrated_zero = " + m.CalibratedZero.ToString("F3"));
     sb.AppendLine("rph_is_calibrated = " + (m.IsCalibrated ? "true" : "false"));
-    sb.AppendLine("rph_reverse      = " + (m.Reverse ? "true" : "false"));
+    sb.AppendLine("rph_reverse      = false");
     sb.AppendLine();
 
     b.CustomData = sb.ToString() + data;
 }
 
-// Write or replace our section (INI-safe, replaces only RPH:Mechanical)
+// Write or replace our section (INI-safe, replaces only [RPH:Mechanical])
 static void WriteRphSection(IMyTerminalBlock b, RphMeta m)
 {
     string data = b.CustomData ?? "";
+    if (RphIsReadOnly(data)) return;                          // NEW: hard stop
+
     var sec = new StringBuilder();
     sec.AppendLine(RPH_HEADER);
     sec.AppendLine("rph_display_name = " + (m.DisplayName ?? ""));
     sec.AppendLine("rph_sub_group    = " + (m.SubGroup ?? ""));
     sec.AppendLine("rph_calibrated_zero = " + m.CalibratedZero.ToString("F3"));
     sec.AppendLine("rph_is_calibrated = " + (m.IsCalibrated ? "true" : "false"));
-    sec.AppendLine("rph_reverse      = " + (m.Reverse ? "true" : "false"));
+    sec.AppendLine("rph_reverse      = false");
+    sec.AppendLine("rph_read_only      = " + (m.Reverse ? "true" : "false"));
     sec.AppendLine();
 
     int start = IndexOfInsensitive(data, RPH_HEADER);
@@ -888,6 +895,24 @@ void CleanupOrphans(bool silent)
 // ---------------------------------------------------------------------------
 // HELPERS
 // ---------------------------------------------------------------------------
+static bool RphIsReadOnly(string data)
+{
+    if (string.IsNullOrEmpty(data)) return false;
+    var lines = data.Split('\n');
+    for (int i = 0; i < lines.Length; i++)
+    {
+        var line = lines[i].Trim();
+        if (line.Length == 0 || line.StartsWith(";") || line.StartsWith("#")) continue;
+        if (line.StartsWith("rph_read_only", StringComparison.OrdinalIgnoreCase))
+        {
+            int eq = line.IndexOf('=');
+            if (eq < 0) continue;
+            var val = line.Substring(eq + 1).Trim().ToLower();
+            return (val == "true" || val == "1" || val == "yes");
+        }
+    }
+    return false;
+}
 
 bool HasRphIgnoreFlag(string data)
 {
