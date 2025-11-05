@@ -38,3 +38,6 @@ v1.7 - Documentation Alignment
 - Sample headers in PB CD updated
 - Documented PB Echo clipping behavior for multi-line refresh
 - Various minor visual improvements
+
+v1.8 - Work In Progress...
+------------------------------

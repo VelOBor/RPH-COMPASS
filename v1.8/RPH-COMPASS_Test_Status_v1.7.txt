@@ -1,4 +1,4 @@
-# RPH Tracker – Test Status v1.7
+# RPH Tracker – Test Status v1.8
 
 ## Purpose
 Comprehensive record of in-game test sessions, known results, and pending retests for the RPH Tracker project.
@@ -71,7 +71,7 @@ Comprehensive record of in-game test sessions, known results, and pending retest
 ---
 
 ## 🚀 Pending Tests (Phase 3)
-- Calibration zero command (`calibrate <group_name>`). CHANGED to group from single part 
+- Calibration zero command (`calibrate <group_name>`) - pending investigation of possibility of using multiple word argument for "run" command to the programmable block
 - Velocity calculation and display (`deg/s`, `m/s`).  NOT YET IMPLEMENTED, greenlit for phase 4
 - Cross-group LCD consistency.  CLARIFICATION NEEDED
 - Extended command argument parser (multi-word support).  CLARIFICATION NEEDED

@@ -1,5 +1,5 @@
 RPH TRACKER ROADMAP
-Version: v1.7 (ASCII Style)
+Version: v1.8 (ASCII Style)
 ====================================
 PROJECT IDENTITY
 ================
@@ -84,10 +84,10 @@ PHASE 5 - ADMINISTRATIVE AND DOCUMENTATION
 STATUS SUMMARY
 ==============
 1.0  Core Framework ...................... [v]
-2.0  Data Handling & Sorting ............. [v]
-3.0  Display System ...................... [v]
-4.0  Extended Features ................... [x]
-5.0  Documentation ....................... [v]
+1.2  Data Handling & Sorting ............. [v]
+1.3+  Display System ...................... [v]
+1.7+  Extended Features ................... [x]
+1.9  Documentation ....................... [v]
 
 ============================================================
 RPH-COMPASS Roadmap - v1.8 Addendum (non-destructive)
@@ -98,13 +98,41 @@ This section only serves as a PRIORITY order, the features
 Status: ACTIVE
 Notes: This addendum defines the v1.8 work order without removing
        or altering completed items from v1.7 and earlier.
+1. Change [RPH:Tracking] → [RPH:Mechanical] everywhere in code and generated PB Custom Data.
 
-1. Echo / Logging
+       [x] Update: block scanning / section creation / cleanup routines / sample CD writer.
+
+       [x] Update: any hardcoded header text in the script.
+
+       [x] Keep: behavior the same, just name change.
+Test: run once with empty/custom data → confirm PB CD now has [RPH:Mechanical] and cleanup still works.
+
+2. Make compact renderer always write to LCD, even when autosize is off.
+
+       [x] “render text to surface” unconditionally.
+
+       [x] autosize as optional post-step.
+
+Test: tag one LCD as compact, autosize = false, run → text shows.
+
+3. Centralize echo through a helper, but allow multiple calls in one run.
+       
+       [x] prefix SafeEcho with script/version once,
+
+       [x] maybe limit total lines per run (experiment with and without)
+
+       [p] “priority” echo for errors (pending clarification)
+Test: run PB, issue a simple command (refresh), ensure messages appear in reasonable order and don’t spam nonsense.
+
+4. Version consilidation
+       [x] Update header comment in the .cs to v1.8 - alpha.
+
+5. Echo / Logging
    [v] Consolidate PB Echo into a single buffered output per run
        - Reason: PB console clipping in v1.7.3
        - Impact: Display/logging only, no change to data model
 
-2. Display Enhancements
+6. Display Enhancements
    [x] Compute and show velocity for tracked parts
        - Rotors / Hinges: deg/s
        - Pistons: m/s
@@ -118,23 +146,20 @@ Notes: This addendum defines the v1.8 work order without removing
        - monospace ladder
        - global minimum clamp to prevent over-shrink
 
-3. Calibration Commands
+7. Calibration Commands
    [ ] Per-group calibration command
        syntax (proposed): "calibrate group <name>"
        - Must use existing PARK-safe write discipline
        - Per-part variant to be evaluated after group version
 
-4. Ongoing Specifications
+8. Documentation sync
+       [x] Make sure the full doc pack is up to date with all keys and notes and specs, strip all emojis etc
+
+Ongoing Specifications
    [v] Preserve PARK-safe non-destructive writes
    [v] ASCII-only keys and values in Custom Data
    [ ] Document new display keys in TechNotes and Context Kit
 
-Implementation Order (v1.8)
-   1) Echo consolidation
-   2) Velocity computation and display
-   3) Optional font forcing
-   4) Split autosize ladder
-   5) Per-group calibration
 End of v1.8 Addendum
 ============================================================
 

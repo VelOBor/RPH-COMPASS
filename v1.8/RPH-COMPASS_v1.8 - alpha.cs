@@ -6,7 +6,7 @@
 //Stability Through Awareness.
 // ---------------------------------------------------------------------------
 //
-// === RPH COMPASS v1.7 ===
+// === RPH COMPASS v1.8 ===
 // Rotor / Piston / Hinge status monitor
 // Phase 3e: Display mode key (full | compact | debug) and render dispatch
 // PARK-safe (does not modify [PARK:*] sections)
@@ -974,17 +974,6 @@ static string TrimLower(string s) { return s == null ? "" : s.Trim().ToLower(); 
 static int IndexOfInsensitive(string h, string n) { return h == null ? -1 : h.IndexOf(n, StringComparison.OrdinalIgnoreCase); }
 
 // ---------------------------------------------------------------------------
-// END OF SCRIPT
-// ---------------------------------------------------------------------------
-//
-// Version: 1.7 (Display modes: full | compact | debug)
-// - rph_display_mode per-LCD toggle; defaults to full
-// - Compact mode: single-line summary; Debug: diagnostic overlay
-// - No change to existing keys; ASCII-only; PARK-safe
-// ---------------------------------------------------------------------------
-
-
-// ---------------------------------------------------------------------------
 // SAFE ECHO WRAPPER (v1.8-pre)
 // ---------------------------------------------------------------------------
 
@@ -1002,3 +991,10 @@ void SafeEcho(string msg)
         Echo(msg);
     }
 }
+
+// ---------------------------------------------------------------------------
+// END OF SCRIPT
+// ---------------------------------------------------------------------------
+// this section will contain new features added during 1.8 builds
+// ---------------------------------------------------------------------------
+

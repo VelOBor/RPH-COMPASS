@@ -1,0 +1,157 @@
+RPH TRACKER ROADMAP
+Version: v1.8.1 (ASCII Style)
+====================================
+PROJECT IDENTITY
+================
+RPH-COMPASS
+Rotor, Piston, Hinge - Component Orientation, Motion And Positional Assessment Status System
+"Monitoring position. Assessing motion. Maintaining awareness. Precision is our direction."
+
+STRICT CODE ADHERENCE PRINCIPLES
+================================
+1. Maintain compatibility with standard Space Engineers INI-style Custom Data.
+2. Preserve PARK script data integrity (never write or modify [PARK:*] sections).
+3. Use ASCII-only characters for all script output, custom data, and documentation.
+4. Avoid redundant writes to Custom Data unless explicitly commanded (for example: rebuild_cd).
+5. Ensure user-facing configuration keys remain consistent across all modules.
+6. Modularize features for scalability and future expansion.
+
+LEGEND
+======
+[x] - greenlit feature to implement, no work has been started, only accepted as "to do"
+[-] - feature is a work in progress, a stub, or partially working
+[+] - feature is a work in progress, acceptable in its current iteration, possibly requires tweaking
+[v] - feature is considered complete, works as designed
+[r] - feature is removed from the docket until further notice
+[p] - feature is planned for future upgrade, not explored or proven feasible
+
+PHASE 1 - INITIALIZATION AND CORE
+=================================
+[v] Basic block group scanning and list population
+[v] Rotor/Piston/Hinge identification and classification
+[v] Per-part custom data headers created (RPH section)
+[v] Persistent storage of calibration and configuration keys
+[v] Refresh and rebuild_cd command separation finalized
+[v] Calibration safety implemented (PARK-safe)
+[v] Command architecture established (refresh, rebuild_cd, cleanup, calibrate_all)
+
+PHASE 2 - DATA HANDLING AND SORTING
+===================================
+[v] Internal data model implemented for parts and LCD targets
+[v] Group membership detection and caching system
+[v] Sorting system (default, by group, by name, by type)
+[v] Alphabetical subgroup sorting verified functional
+[v] Group caching quirk documented and handled
+
+PHASE 3 - DISPLAY SYSTEM
+========================
+[v] Per-LCD configuration via [RPH:Display]
+[v] Added key: rph_display_mode = full | compact | debug
+[v] Compact mode - condensed line display grouped per subgroup
+[v] Debug mode - engineering readout for tagged LCDs only
+[v] Group-based filtering (rph_display_groups)
+[v] Display header key (rph_header)
+[v] ASCII-only enforcement confirmed
+[v] LCD display auto-refresh stability verified
+[v] Added key: rph_display_autosize = true | false (v1.7.3, acceptable in its current version, possible revision later)
+[v] Added key: rph_group_separators = true | false (v1.7.3, active when sorted by group)
+
+[-] Compact renderer must always write display text even when autosize is disabled
+- render text to surface unconditionally
+- apply autosize only as an optional post-step
+- purpose: prevent "no update" condition on compact LCDs with autosize=false
+
+[-] Echo and logging control for display-related operations
+- use a centralized echo helper (SafeEcho) for all user-facing messages in display and refresh paths
+- allow multiple echos per run so the user can actually see warnings and summaries in PB console
+- keep messages short to avoid PB terminal clipping
+- must be ASCII-only
+
+[p] Longer-term echo variant
+- consolidate into a single buffered output per run if game terminal behavior allows
+- target: mitigate PB console clipping in large grids
+- impact: display/logging only, no change to data model
+
+PHASE 4 - EXTENDED FEATURE LAYER
+================================
+[x] Cross-LCD coordination (linked summaries)
+[x] Multi-PB handshake groundwork
+[x] Enhanced calibration controls (per-part command, change to per-group command)
+[x] Persistent state sync
+[x] Velocity display (greenlit)
+- compute and show velocity for tracked parts
+- rotors / hinges: deg/s
+- pistons: m/s
+- first exposed in DEBUG view, optional in FULL
+[x] Configurable update interval (greenlit)
+[p] Autoscroll (pending further study of feasibility and possible conflicts with autosize)
+[x] Units and precision
+[x] Per-font resizing with separate ladders, force font to debug or monospace
+- optional font forcing in [RPH:Display]
+key: rph_font = auto | debug | monospace
+must be ASCII-only
+must not break existing v1.7.3 configs
+- split autosize ladder per font type
+debug ladder
+monospace ladder
+global minimum clamp to prevent over-shrink
+[x] Implement a safeguard against rewriting custom data (in addition to checking whether part is calibrated or not)
+[x] Implement an UNSAFE CLEAR. A command to clear RPH keys from ALL tracked parts, regardless of safety keys (calibrated, read-only)
+
+[-] Per-group calibration command
+- syntax (proposed): "calibrate group <name>"
+- must use existing PARK-safe write discipline
+- per-part variant to be evaluated after group version
+
+PHASE 5 - ADMINISTRATIVE AND DOCUMENTATION
+==========================================
+[v] Codebase cleanup and ASCII sanitation complete
+[v] Documentation alignment (roadmap, corkboard, technotes)
+[v] Version tracking established
+[v] Test plan formalized
+[v] Stable baseline declared (v1.6e)
+
+[-] Documentation sync for v1.8.x
+- make sure the full doc pack (roadmap, technotes, context kit, test status) is up to date with all keys and notes and specs
+- remove all non-text / non-ASCII symbols from test status and related helper files
+- document new display keys introduced in Phase 3 and Phase 4 (font forcing, per-font ladders, velocity visibility)
+- note the intentional overwrite of PB Custom Data as user-facing guidance only
+
+STATUS SUMMARY
+==============
+1.0 Core Framework . [v]
+1.2 Data Handling & Sorting . [v]
+1.3+ Display System . [-]
+1.7+ Extended Features . [x]
+1.9 Documentation . [-]
+
+==============
+WORK ORDER (v1.8.1)
+
+1. Display system correctness patch
+
+	- compact renderer always writes
+
+	- keep autosize optional
+
+2. Echo/logging refinement
+
+	- centralize through helper
+
+	- keep multi-echo allowed
+
+	- keep single-buffer variant as [p]
+
+3. Phase 4 display extensions
+
+	- velocity in DEBUG, optional in FULL
+
+	- font forcing key
+
+	- per-font autosize ladders
+
+4. Per-group calibration command
+
+5. Documentation sync and ASCII normalization
+
+End of file.
