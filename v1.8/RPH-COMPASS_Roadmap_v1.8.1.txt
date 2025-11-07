@@ -88,12 +88,12 @@ PHASE 4 - EXTENDED FEATURE LAYER
 [x] Units and precision
 [x] Per-font resizing with separate ladders, force font to debug or monospace
 - optional font forcing in [RPH:Display]
-key: rph_font = auto | debug | monospace
-must be ASCII-only
-must not break existing v1.7.3 configs
+	key: rph_font = auto | debug | monospace
+	must be ASCII-only
+	must not break existing v1.7.3 configs
 - split autosize ladder per font type
-debug ladder
-monospace ladder
+	debug ladder
+	monospace ladder
 global minimum clamp to prevent over-shrink
 [x] Implement a safeguard against rewriting custom data (in addition to checking whether part is calibrated or not)
 [x] Implement an UNSAFE CLEAR. A command to clear RPH keys from ALL tracked parts, regardless of safety keys (calibrated, read-only)
